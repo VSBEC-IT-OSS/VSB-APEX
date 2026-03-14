@@ -16,7 +16,7 @@ app.get('/health', (req, res) => {
 });
 
 // --- Routes (to be added by each module owner) ---
-// app.use('/api/auth', require('./routes/auth'));        // Auth Engineer
+app.use('/api/auth', require('./routes/auth'));        // Auth Engineer
 // app.use('/api/attendance', require('./routes/attendance')); // Backend Engineer
 // app.use('/api/admin', require('./routes/admin'));      // Backend Engineer
 
