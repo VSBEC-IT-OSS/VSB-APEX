@@ -1,4 +1,4 @@
-# 🤖 Contributing Guide: Using AI (Claude Free Tier) to Build VSB-APEX
+# 🤖 Contributing Guide: Using AI to Build VSB-APEX
 
 This guide explains **how to use AI effectively as a developer teammate** to complete issues in this project — even if you are a beginner.
 
