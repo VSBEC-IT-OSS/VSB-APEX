@@ -1,3 +1,5 @@
+// Fixed Insights page - Kishore
+
 import { useState } from 'react';
 import { useData } from '../hooks/useData.js';
 import Card from '../components/ui/Card.jsx';
