@@ -1,417 +1,219 @@
-# VSB APEX
+# VSB-APEX
 
-# VSB-APEX Frontend
+Academic performance intelligence platform for the Department of Information Technology, VSB Engineering College.
 
-React + Vite dashboard for academic performance tracking.
-
-## Setup
-
-1. **Install dependencies**:
-```bash
-   npm install
-```
-
-2. **Configure API URL**:
-```bash
-   cp .env.example .env
-   # Edit .env if backend is NOT running on localhost:8000
-```
-
-3. **Start dev server**:
-```bash
-   npm run dev
-   # Opens http://localhost:5173 automatically
-```
-
-4. **Build for production**:
-```bash
-   npm run build
-   # Output: frontend/dist/
-```
-
-## Environment Variables
-
-| Variable | Purpose | Example |
-|----------|---------|---------|
-| `VITE_API_BASE` | Backend API URL | `http://localhost:8000/api` |
-
-## Troubleshooting
-
-**"Failed to fetch" on login?**
-- Check that backend is running on `localhost:8000`
-- Verify `VITE_API_BASE` in `.env` is correct
-- Open DevTools → Network tab to see actual request URL
-
-**VITE_API_BASE is undefined?**
-- Make sure `.env` file exists (not `.env.example`)
-- Restart dev server: `npm run dev`
-
-## Quick Start
-
-### Local Development
-
-1. **Install dependencies**:
-```bash
-   cd backend
-   pip install -r requirements.txt
-```
-
-2. **Set up environment**:
-```bash
-   cp .env.example .env
-   # Edit .env with your DATABASE_URL and SECRET_KEY
-```
-
-3. **Seed test users**:
-```bash
-   python seed_users.py
-```
-
-4. **Run backend**:
-```bash
-   python run.py
-   # Should print: "Uvicorn running on http://0.0.0.0:8000"
-```
-
-5. **Test health check**:
-```bash
-   curl http://localhost:8000/health
-```
-
-### Test Credentials
-- **Email**: hod@vsbec.edu.in
-- **Password**: admin123
-
-VSB APEX is a full-stack academic analytics and management platform designed for department-level monitoring of:
-
-- Attendance
-- Results
-- Internal Tests
-- Placement
-
-It enables HoDs and faculty to move from **raw data → actionable insights → decisions**.
+Tracks attendance, results, internal tests, placement, and goals — giving HoDs and staff a single dashboard to go from raw data to actionable decisions.
 
 ---
 
-# 🚀 Features
+## Tech Stack
 
-## ✅ Current Features
-
-- Excel-based data upload system
-- Attendance tracking and aggregation
-- Results and internal marks processing
-- Basic insights and analytics APIs
-- Role-based authentication (Admin / Staff)
-
----
-
-## 🔥 Upcoming Features (In Progress)
-
-### 🎓 Advanced Student Dashboard
-- Full student profile (academic + placement)
-- Risk classification (high / moderate / safe)
-- Performance trends (attendance, results, internals)
-- Subject-wise drilldown
-- LeetCode + internships + placement metrics
-- Admin edit + audit logging
+| Layer    | Technology                          |
+|----------|-------------------------------------|
+| Frontend | React 18 + Vite                     |
+| Backend  | FastAPI + SQLAlchemy + Alembic      |
+| Database | PostgreSQL (Neon recommended)       |
+| Auth     | JWT via `python-jose` + `bcrypt`    |
 
 ---
 
-### 📊 Hierarchical Data System
-- Batch → Section → Student filtering across all pages
-- Dynamic controls for data exploration
-- Standardized filtering UX
+## Prerequisites
+
+Make sure these are installed before you begin:
+
+- Python 3.10+
+- Node.js 18+
+- Git
+
+You do **not** need PostgreSQL installed locally — the project uses a shared Neon cloud database (see Environment Setup below).
 
 ---
 
-### 🔍 Drilldown Navigation
-- Clickable overview metrics
-- Navigate to source data (attendance, results, etc.)
-- Context-aware filtering
-
----
-
-### 📈 Advanced Analytics
-- Cross-batch comparisons
-- Section-wise comparisons
-- Subject difficulty analysis
-- Internal test progression tracking
-
----
-
-### 💼 Placement Intelligence System
-- Multi-offer tracking per student
-- Company-wise analysis
-- Offer distribution insights
-- HoD-level placement overview
-
----
-
-### 📤 PPT Export System
-- Auto-generate meeting presentations
-- Editable slides
-- Data-driven content
-
----
-
-### ☁️ Deployment (Planned)
-- Frontend: Vercel
-- Backend: Render / Railway
-- Database: Neon / Supabase
-
----
-
-# 🧱 Tech Stack
-
-## Backend
-- FastAPI
-- SQLAlchemy
-- Alembic (migrations)
-
-## Frontend
-- React (Vite)
-
-## Database
-- PostgreSQL (recommended)
-
----
-
-# 🛠️ Getting Started (For Everyone)
-
-## 📥 1. Clone the Repository
+## 1. Clone the Repository
 
 ```bash
-git clone https://github.com/VSBEC-IT-OSS/VSB-APEX.git
-cd VSB-APEX
+git clone https://github.com/vsbec-it-oss/vsb-apex.git
+cd vsb-apex
 ```
 
 ---
 
-## ⚙️ 2. Backend Setup
-
-### Create Virtual Environment
+## 2. Backend Setup
 
 ```bash
+cd backend
 python -m venv venv
 ```
 
-### Activate
+Activate the virtual environment:
 
-Windows:
+**Windows:**
 ```bash
 venv\Scripts\activate
 ```
 
-Mac/Linux:
+**Mac / Linux:**
 ```bash
 source venv/bin/activate
 ```
 
----
-
-### Install Dependencies
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
+> ⚠️ Do **not** manually install `passlib`. It has been removed from this project due to incompatibility with modern `bcrypt`. The project uses `bcrypt` directly.
+
 ---
 
-### Run Backend
+## 3. Environment Setup
+
+Copy the example env file:
 
 ```bash
-uvicorn main:app --reload
+cp .env.example .env
 ```
 
-Backend runs at:
+Then open `.env` and fill in the real values. Get these from the team's shared credentials (see the pinned message in our group / ask the project lead):
+
+```env
+DATABASE_URL=postgresql://...      # Shared Neon DB — get from team
+SECRET_KEY=...                     # Get from team (or generate your own for local dev)
+ACCESS_TOKEN_EXPIRE_MINUTES=48000
+APP_ENV=development
+CORS_ORIGINS=http://localhost:5173,http://localhost:3000
 ```
-http://127.0.0.1:8000
+
+To generate your own `SECRET_KEY` for local development:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+> ℹ️ If you use your own `SECRET_KEY`, tokens won't be valid across team members' instances — this is fine for local dev.
+
+---
+
+## 4. Run the Backend
+
+```bash
+python run.py
+```
+
+Backend runs at: `http://localhost:8000`
+
+Confirm it's working:
+```bash
+curl http://localhost:8000/health
 ```
 
 ---
 
-## 💻 3. Frontend Setup
+## 5. Frontend Setup
+
+Open a new terminal:
 
 ```bash
 cd frontend
+cp .env.example .env
 npm install
 npm run dev
 ```
 
-Frontend runs at:
-```
-http://localhost:5173
-```
+Frontend runs at: `http://localhost:5173`
+
+The `.env.example` already has the correct local API URL — no changes needed for local development.
 
 ---
 
-# 🐳 Docker (Optional but Recommended)
+## 6. Seeding Initial Users (First-Time Only)
 
-Docker helps you run everything without worrying about setup issues.
-
-## Install Docker
-👉 https://www.docker.com/
-
----
-
-## Run Project Using Docker
+> Only needed on a **fresh database**. Skip this if the team DB already has users.
 
 ```bash
-docker-compose up --build
+cd backend
+python seed_users.py
+```
+
+Default credentials after seeding:
+
+| Email                | Password   | Role  |
+|----------------------|------------|-------|
+| hod@vsbec.edu.in     | admin123   | hod   |
+| staff1@vsbec.edu.in  | staff123   | staff |
+| admin@vsbec.edu.in   | admin123   | admin |
+
+> The admin account can create and manage users through the app. Seeding is a one-time bootstrap — ongoing user management happens through the UI.
+
+---
+
+## Project Structure
+
+```
+vsb-apex/
+├── backend/
+│   ├── app/
+│   │   ├── api/          # Route handlers
+│   │   ├── core/         # Config, security (JWT + bcrypt)
+│   │   ├── db/           # Database session
+│   │   ├── models/       # SQLAlchemy models
+│   │   ├── schemas/      # Pydantic schemas
+│   │   ├── services/     # Business logic
+│   │   └── utils/        # Excel parser, helpers
+│   ├── alembic/          # DB migrations
+│   ├── requirements.txt
+│   ├── run.py
+│   └── seed_users.py
+└── frontend/
+    ├── src/
+    │   ├── components/   # Reusable UI components
+    │   ├── pages/        # Route-level page components
+    │   ├── data/         # dataService.js — all API calls
+    │   └── hooks/
+    ├── index.html
+    └── vite.config.js
 ```
 
 ---
 
-## Why Docker?
+## Common Errors & Fixes
 
-- Same environment for everyone
-- No dependency conflicts
-- Easier deployment later
-
----
-
-# 🔄 Contribution Workflow
-
-## 🍴 1. Fork the Repo
-
-Click **Fork** on GitHub
-
----
-
-## 📥 2. Clone Your Fork
-
+**`passlib` / bcrypt version error on `seed_users.py`**
+This means `passlib` is still installed. The project no longer uses it:
 ```bash
-git clone <your-fork-url>
-cd VSB-APEX
+pip uninstall passlib -y
+pip install -r requirements.txt
 ```
 
----
+**`Session expired` immediately on login**
+This means the backend returned 401. Check:
+- Is the backend running? (`python run.py`)
+- Are the DB credentials in `.env` correct?
+- Did you seed the DB? (`python seed_users.py`)
 
-## 🌿 3. Create Branch
+**`VITE_API_BASE not configured`**
+You're missing `frontend/.env`. Run `cp .env.example .env` inside the `frontend/` folder.
 
-```bash
-git checkout -b feature/issue-name
-```
-
----
-
-## ✏️ 4. Make Changes
-
-- Follow issue requirements
-- Keep code clean
-- Do NOT break existing features
+**CORS errors in browser console**
+Make sure `CORS_ORIGINS` in `backend/.env` includes `http://localhost:5173`.
 
 ---
 
-## 🧪 5. Test Locally
+## Contribution Workflow
 
-Backend:
-```bash
-uvicorn main:app --reload
-```
+1. Pick an issue from the GitHub board
+2. Create a branch: `git checkout -b feature/issue-name`
+3. Make changes, test locally
+4. Commit: `git commit -m "feat: what you did"`
+5. Push and open a Pull Request against `main`
 
-Frontend:
-```bash
-npm run dev
-```
+Keep PRs focused — one issue per PR. Do not push directly to `main`.
 
----
-
-## 📤 6. Commit & Push
-
-```bash
-git add .
-git commit -m "feat: implemented <feature name>"
-git push origin feature/issue-name
-```
+See `Contributing.md` for the full AI-assisted development workflow.
 
 ---
 
-## 🔁 7. Create Pull Request
+## Maintained By
 
-- Go to GitHub
-- Click **Compare & Pull Request**
-- Describe:
-  - What you did
-  - How to test
-
----
-
-# 👨‍💼 Admin Guide (Testing PRs)
-
-## Pull PR Locally
-
-```bash
-git fetch origin pull/<PR_NUMBER>/head:test-branch
-git checkout test-branch
-```
-
----
-
-## Test Checklist
-
-- App runs without errors
-- Feature works correctly
-- No existing features broken
-- Clean code structure
-
----
-
-## Merge Rules
-
-✅ Merge if:
-- Fully working
-- Matches issue
-- No conflicts
-
-❌ Reject if:
-- Breaks system
-- Incomplete
-- Bad structure
-
----
-
-# ⚠️ Important Rules
-
-## DO
-
-- Follow project structure
-- Use services (not random logic)
-- Write clean code
-
-## DON'T
-
-- Duplicate code
-- Hardcode values
-- Create random files
-
----
-
-# ⚡ Development Speed Goal
-
-- 1 developer → 1 issue/day  
-- Team of 5 → 5 issues/day  
-
----
-
-# 🧠 Using AI (Mandatory)
-
-We use AI (Claude) to accelerate development.
-
-👉 See `CONTRIBUTING.md` for full AI workflow.
-
----
-
-# 🏁 Vision
-
-Build a **complete academic intelligence platform** that helps departments:
-
-- Monitor performance
-- Identify risks
-- Improve outcomes
-
----
-
-# 📌 Maintained By
-
-VSBEC IT OSS Team
+TaskForce - VSBEC IT
