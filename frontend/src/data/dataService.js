@@ -10,7 +10,7 @@
 import * as mock from './mockData.js';
 
 const USE_MOCK  = false;
-const API_BASE  = 'http://localhost:5000/api';
+const API_BASE  = 'http://localhost:8000/api';
 const delay     = (ms = 250) => new Promise(r => setTimeout(r, ms));
 
 // ── Auth token store ───────────────────────────────────────────

@@ -1,10 +1,3 @@
-/**
- * App.jsx — updated for Part 3
- * - Passes `user` to <Sidebar> (role-gated nav)
- * - Adds /settings route → <UserSettings>
- * frontend/src/App.jsx
- */
-
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar       from './components/layout/Sidebar.jsx';

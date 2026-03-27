@@ -133,7 +133,7 @@ export default function Login({ onLogin }) {
           </form>
 
           <p style={{ fontSize: 11, color: 'var(--text3)', textAlign: 'center', marginTop: 18 }}>
-            Demo: <code style={{ background:'var(--surface2)', padding:'1px 6px', borderRadius:4 }}>hod@vsb.edu</code> / <code style={{ background:'var(--surface2)', padding:'1px 6px', borderRadius:4 }}>vsb2024</code>
+            Demo: <code style={{ background:'var(--surface2)', padding:'1px 6px', borderRadius:4 }}>hod@vsbec.edu.in</code> / <code style={{ background:'var(--surface2)', padding:'1px 6px', borderRadius:4 }}>admin123</code>
           </p>
         </div>
       </div>
