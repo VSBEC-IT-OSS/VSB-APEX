@@ -1,3 +1,4 @@
+// frontend/src/pages/Insights.jsx
 // Fixed Insights page - Kishore
 
 import { useState } from 'react';

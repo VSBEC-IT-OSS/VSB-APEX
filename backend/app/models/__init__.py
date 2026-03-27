@@ -1,4 +1,4 @@
-# backend/app/models/__init__.py
+# app/models/__init__.py
 from app.models.user          import User             # noqa: F401
 from app.models.activity_log  import ActivityLog      # noqa: F401
 from app.models.attendance    import AttendanceRecord, AttendanceSummary  # noqa: F401

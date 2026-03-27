@@ -1,3 +1,4 @@
+# app/models/activity_log.py
 """
 ActivityLog model — records every login / logout with timestamp + IP.
 """

@@ -1,3 +1,4 @@
+// frontend/src/pages/UserSettings.jsx
 /**
  * UserSettings.jsx — Super-admin User Management page
  * frontend/src/pages/UserSettings.jsx

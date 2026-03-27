@@ -1,3 +1,34 @@
+# Environment variables (NEVER commit real .env)
+backend/.env
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# Secrets
+*.key
+*.pem
+*.jks
+
+# Build outputs
+backend/__pycache__/
+backend/.venv/
+frontend/dist/
+frontend/node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+backend/app.log
+
 venv
 sample_data
 # ── Frontend ────────────────────────────

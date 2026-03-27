@@ -1,3 +1,4 @@
+// frontend/src/components/ui/Badge.jsx
 const STYLES = {
   critical: { bg: 'var(--red-bg)',    color: 'var(--red)',    border: '#fca5a5' },
   warning:  { bg: 'var(--yellow-bg)', color: 'var(--yellow)', border: '#fcd34d' },

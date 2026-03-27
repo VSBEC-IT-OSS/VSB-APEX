@@ -1,3 +1,4 @@
+// frontend/src/utils/excelParser.js
 /**
  * Excel Parser Utility
  * Uses `xlsx` to parse uploaded files into API-matching shapes.

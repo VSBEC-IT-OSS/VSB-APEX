@@ -1,3 +1,4 @@
+// frontend/src/components/ui/LoadingSpinner.jsx
 export default function LoadingSpinner({ text = 'Loading data…' }) {
   return (
     <div style={{

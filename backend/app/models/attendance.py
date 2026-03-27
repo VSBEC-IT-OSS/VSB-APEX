@@ -1,3 +1,4 @@
+# app/models/attendance.py
 from sqlalchemy import Column, Integer, String, Float, Date, DateTime, ForeignKey, UniqueConstraint, Boolean
 from sqlalchemy.sql import func
 from app.db.database import Base

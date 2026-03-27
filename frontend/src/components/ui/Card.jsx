@@ -1,3 +1,4 @@
+// frontend/src/components/ui/Card.jsx
 export default function Card({ children, style = {}, className = '' }) {
   return (
     <div className={className} style={{

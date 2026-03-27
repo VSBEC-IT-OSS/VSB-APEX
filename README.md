@@ -1,5 +1,87 @@
 # VSB APEX
 
+# VSB-APEX Frontend
+
+React + Vite dashboard for academic performance tracking.
+
+## Setup
+
+1. **Install dependencies**:
+```bash
+   npm install
+```
+
+2. **Configure API URL**:
+```bash
+   cp .env.example .env
+   # Edit .env if backend is NOT running on localhost:8000
+```
+
+3. **Start dev server**:
+```bash
+   npm run dev
+   # Opens http://localhost:5173 automatically
+```
+
+4. **Build for production**:
+```bash
+   npm run build
+   # Output: frontend/dist/
+```
+
+## Environment Variables
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `VITE_API_BASE` | Backend API URL | `http://localhost:8000/api` |
+
+## Troubleshooting
+
+**"Failed to fetch" on login?**
+- Check that backend is running on `localhost:8000`
+- Verify `VITE_API_BASE` in `.env` is correct
+- Open DevTools → Network tab to see actual request URL
+
+**VITE_API_BASE is undefined?**
+- Make sure `.env` file exists (not `.env.example`)
+- Restart dev server: `npm run dev`
+
+## Quick Start
+
+### Local Development
+
+1. **Install dependencies**:
+```bash
+   cd backend
+   pip install -r requirements.txt
+```
+
+2. **Set up environment**:
+```bash
+   cp .env.example .env
+   # Edit .env with your DATABASE_URL and SECRET_KEY
+```
+
+3. **Seed test users**:
+```bash
+   python seed_users.py
+```
+
+4. **Run backend**:
+```bash
+   python run.py
+   # Should print: "Uvicorn running on http://0.0.0.0:8000"
+```
+
+5. **Test health check**:
+```bash
+   curl http://localhost:8000/health
+```
+
+### Test Credentials
+- **Email**: hod@vsbec.edu.in
+- **Password**: admin123
+
 VSB APEX is a full-stack academic analytics and management platform designed for department-level monitoring of:
 
 - Attendance

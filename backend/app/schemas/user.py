@@ -1,3 +1,4 @@
+# app/schemas/user.py
 """
 Schemas for user management & activity log.
 Extends / replaces backend/app/schemas/user.py

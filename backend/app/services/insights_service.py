@@ -1,3 +1,4 @@
+# app/services/insights_service.py
 """
 Rule-based insights engine.
 Each rule inspects the DB and returns Insight dicts if triggered.

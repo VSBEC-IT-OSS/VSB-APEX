@@ -1,3 +1,4 @@
+// frontend/src/hooks/useData.js
 import { useState, useEffect } from 'react';
 import { dataService } from '../data/dataService.js';
 

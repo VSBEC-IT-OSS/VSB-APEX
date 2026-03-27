@@ -1,3 +1,4 @@
+// frontend/src/pages/Goals.jsx
 import{useState}from'react';
 import{useData}from'../hooks/useData.js';
 import Card from'../components/ui/Card.jsx';

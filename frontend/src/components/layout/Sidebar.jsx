@@ -1,3 +1,4 @@
+// frontend/src/components/layout/Sidebar.jsx
 /**
  * Sidebar.jsx — updated for Part 3
  * - Accepts optional `user` prop (passed from App)

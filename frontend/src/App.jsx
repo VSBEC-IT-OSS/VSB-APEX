@@ -1,3 +1,4 @@
+// frontend/src/App.jsx
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar       from './components/layout/Sidebar.jsx';
@@ -14,8 +15,26 @@ import UserSettings  from './pages/UserSettings.jsx';
 import { isLoggedIn, clearAuthToken } from './data/dataService.js';
 
 export default function App() {
+  const [apiError, setApiError] = useState('');
   const [user,    setUser]    = useState(null);
   const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    // Check if API_BASE is set
+    const api = import.meta.env.VITE_API_BASE;
+    if (!api) {
+      setApiError('❌ VITE_API_BASE not configured. Check frontend/.env');
+    }
+  }, []);
+
+  if (apiError) {
+    return (
+      <div style={{ padding: 20, color: 'red', fontFamily: 'monospace' }}>
+        <h2>Configuration Error</h2>
+        <p>{apiError}</p>
+      </div>
+    );
+  }
 
   // Restore session from localStorage on first load
   useEffect(() => {

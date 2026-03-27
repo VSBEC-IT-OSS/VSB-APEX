@@ -1,3 +1,4 @@
+// frontend/src/pages/InternalTests.jsx
 import{useState,useMemo}from'react';
 import Card from'../components/ui/Card.jsx';
 import Badge from'../components/ui/Badge.jsx';

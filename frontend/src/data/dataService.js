@@ -10,7 +10,9 @@
 import * as mock from './mockData.js';
 
 const USE_MOCK  = false;
-const API_BASE  = 'http://localhost:8000/api';
+const API_BASE = import.meta.env.VITE_API_BASE || (() => {
+  throw new Error('VITE_API_BASE not configured. Check .env');
+})();
 const delay     = (ms = 250) => new Promise(r => setTimeout(r, ms));
 
 // ── Auth token store ───────────────────────────────────────────
@@ -35,7 +37,15 @@ async function apiFetch(path, options = {}) {
       ...(options.headers ?? {}),
     },
   });
-  if (res.status === 401) { clearAuthToken(); throw new Error('Session expired. Please log in again.'); }
+  // In apiFetch:
+if (res.status === 401) {
+  clearAuthToken();
+  // Check if this was a login attempt
+  if (path === '/auth/login') {
+    throw new Error('Invalid email or password.');
+  }
+  throw new Error('Session expired. Please log in again.');
+}
   if (!res.ok) throw new Error(`API error ${res.status}`);
   return res.json();
 }

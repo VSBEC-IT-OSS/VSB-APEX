@@ -1,3 +1,4 @@
+# app/api/routes/auth.py
 """
 Auth routes — updated to record login/logout in activity_log.
 Drop-in replacement for backend/app/api/routes/auth.py

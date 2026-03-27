@@ -1,3 +1,4 @@
+# app/models/goal.py
 from sqlalchemy import Column,Integer,String,Float,Boolean,DateTime
 from sqlalchemy.sql import func
 from app.db.database import Base

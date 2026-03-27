@@ -1,3 +1,4 @@
+# app/services/user_service.py
 """
 Service layer for user management and activity logging.
 """

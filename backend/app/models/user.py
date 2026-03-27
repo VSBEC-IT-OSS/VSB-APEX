@@ -1,3 +1,4 @@
+# app/models/user.py
 """
 User model — updated to include last_login timestamp.
 Drop-in replacement for backend/app/models/user.py

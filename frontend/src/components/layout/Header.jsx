@@ -1,3 +1,4 @@
+// frontend/src/components/layout/Header.jsx
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Upload, Bell, ChevronRight, FileDown, LogOut } from 'lucide-react';

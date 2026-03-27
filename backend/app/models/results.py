@@ -1,3 +1,4 @@
+# app/models/results.py
 from sqlalchemy import Column, Integer, String, Float, DateTime, UniqueConstraint, Boolean
 from sqlalchemy.sql import func
 from app.db.database import Base
