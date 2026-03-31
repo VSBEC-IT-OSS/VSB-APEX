@@ -1,8 +1,4 @@
 # app/main.py
-"""
-FastAPI application entry-point — updated for Part 3 (user management).
-Drop-in replacement for backend/app/main.py
-"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

@@ -1,5 +1,5 @@
 // frontend/src/pages/Placement.jsx
-import{useState,useRef}from'react';
+import{useState,useRef,useEffect}from'react';
 import{useData}from'../hooks/useData.js';
 import Card from'../components/ui/Card.jsx';
 import LoadingSpinner from'../components/ui/LoadingSpinner.jsx';
@@ -7,20 +7,82 @@ import PageHeader from'../components/ui/PageHeader.jsx';
 import{Table,Tr,Td}from'../components/ui/Table.jsx';
 import{dataService}from'../data/dataService.js';
 import{TrendingUp,Building2,IndianRupee,Award,Users,Upload,FileSpreadsheet,CheckCircle,AlertCircle,X,Plus}from'lucide-react';
-import{PieChart,Pie,Cell,Tooltip,ResponsiveContainer,BarChart,Bar,XAxis,YAxis,CartesianGrid}from'recharts';
+import{PieChart,Pie,Cell,Tooltip,ResponsiveContainer,BarChart,Bar,XAxis,YAxis,CartesianGrid,Legend}from'recharts';
 
 const TS={contentStyle:{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:8,fontSize:12,boxShadow:'var(--shadow-md)'}};
 
-const INIT_COMPANIES=[
-  {company:'Zoho Corporation',  package:18.0,students:3, type:'Product', batch:'2024–25',color:'#16a34a'},
-  {company:'TCS Digital',       package:7.0, students:18,type:'IT',      batch:'2024–25',color:'#1e3a5f'},
-  {company:'Infosys Systems',   package:6.5, students:12,type:'IT',      batch:'2024–25',color:'#2a5298'},
-  {company:'Wipro Elite',       package:6.0, students:14,type:'IT',      batch:'2024–25',color:'#6d28d9'},
-  {company:'Cognizant',         package:5.5, students:20,type:'IT',      batch:'2024–25',color:'#b45309'},
-  {company:'HCL Technologies',  package:4.5, students:22,type:'IT',      batch:'2024–25',color:'#4a5568'},
-  {company:'Infosys',           package:4.0, students:5, type:'IT',      batch:'2024–25',color:'#4a5568'},
-];
-const PKG_DIST=[{range:'>10 LPA',count:3},{range:'6–10',count:30},{range:'4–6',count:47},{range:'<4',count:14}];
+const COLOR_PALETTE=['#16a34a','#1e3a5f','#2a5298','#6d28d9','#b45309','#4a5568','#d97706','#0f766e','#831843','#1d4ed8'];
+
+function getColor(index){return COLOR_PALETTE[index % COLOR_PALETTE.length];}
+
+function groupPlacementRows(rows){
+  const groups={};
+  rows.forEach(row=>{
+    const company=row.company||'Unknown';
+    const batch=row.batch||'All';
+    const section=row.section||'All';
+    const type=row.offer_type||'Other';
+    const key=[company,batch,section,type].join('||');
+    if(!groups[key]){
+      groups[key]={company,batch,section,type,students:0,totalPackage:0,color:getColor(Object.keys(groups).length)};
+    }
+    groups[key].students += 1;
+    groups[key].totalPackage += Number(row.package ?? 0);
+  });
+  return Object.values(groups).map(group=>({
+    ...group,
+    package: group.students > 0 ? parseFloat((group.totalPackage / group.students).toFixed(2)) : 0,
+  }));
+}
+
+function buildPackageDistribution(rows){
+  const counts={'>10 LPA':0,'6–10':0,'4–6':0,'<4':0};
+  rows.forEach(row=>{
+    const pkg=Number(row.package ?? 0);
+    if(pkg>10) counts['>10 LPA'] += 1;
+    else if(pkg>=6) counts['6–10'] += 1;
+    else if(pkg>=4) counts['4–6'] += 1;
+    else counts['<4'] += 1;
+  });
+  return [
+    {range:'>10 LPA',count:counts['>10 LPA']},
+    {range:'6–10',count:counts['6–10']},
+    {range:'4–6',count:counts['4–6']},
+    {range:'<4',count:counts['<4']},
+  ];
+}
+
+function buildBatchData(rows){
+  const map={};
+  rows.forEach(row=>{
+    const name=row.batch||'All';
+    if(!map[name]) map[name]={name,placed:0,totalPackage:0,count:0};
+    map[name].placed += 1;
+    map[name].totalPackage += Number(row.package ?? 0);
+    map[name].count += 1;
+  });
+  return Object.values(map).map(item=>({
+    name:item.name,
+    placed:item.placed,
+    avgPackage:item.count > 0 ? parseFloat((item.totalPackage / item.count).toFixed(2)) : 0,
+  }));
+}
+
+function buildSectionData(rows){
+  const map={};
+  rows.forEach(row=>{
+    const name=row.section||'All';
+    if(!map[name]) map[name]={name,placed:0,totalPackage:0,count:0};
+    map[name].placed += 1;
+    map[name].totalPackage += Number(row.package ?? 0);
+    map[name].count += 1;
+  });
+  return Object.values(map).map(item=>({
+    name:item.name,
+    placed:item.placed,
+    avgPackage:item.count > 0 ? parseFloat((item.totalPackage / item.count).toFixed(2)) : 0,
+  }));
+}
 
 function UploadPanel({onClose,onSuccess}){
   const[file,setFile]=useState(null);
@@ -39,7 +101,7 @@ function UploadPanel({onClose,onSuccess}){
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
         <div>
           <h3 style={{fontFamily:'var(--font-display)',fontWeight:700,fontSize:14}}>Upload Placement Data</h3>
-          <p style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Required columns: Student_ID, Company, Package_LPA, Offer_Type, Batch</p>
+          <p style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Required columns: Student_ID, Company, Package_LPA, Offer_Type, Batch, Section</p>
         </div>
         <button onClick={onClose} style={{color:'var(--text3)',display:'flex',padding:4,cursor:'pointer'}}><X size={16}/></button>
       </div>
@@ -71,7 +133,7 @@ function UploadPanel({onClose,onSuccess}){
 
 // Modal to add a company manually
 function AddCompanyModal({onSave,onClose}){
-  const[form,setForm]=useState({company:'',package:'',students:'',type:'IT',batch:'2024–25',color:'#1e3a5f'});
+  const[form,setForm]=useState({company:'',package:'',students:'',type:'IT',batch:'2024–25',section:'A',color:'#1e3a5f'});
   function upd(k,v){setForm(p=>({...p,[k]:v}));}
   return(
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.35)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,padding:20}}
@@ -82,7 +144,7 @@ function AddCompanyModal({onSave,onClose}){
           <button onClick={onClose} style={{color:'var(--text3)',display:'flex',cursor:'pointer'}}><X size={16}/></button>
         </div>
         <div style={{display:'flex',flexDirection:'column',gap:12}}>
-          {[['Company Name','company','text','e.g. Zoho Corporation'],['Package (LPA)','package','number','e.g. 7.5'],['Students Placed','students','number','e.g. 12'],['Batch','batch','text','e.g. 2024–25']].map(([l,k,t,ph])=>(
+          {[['Company Name','company','text','e.g. Zoho Corporation'],['Package (LPA)','package','number','e.g. 7.5'],['Students Placed','students','number','e.g. 12'],['Batch','batch','text','e.g. 2024–25'],['Section','section','text','e.g. A']].map(([l,k,t,ph])=>(
             <div key={k}>
               <label style={{fontSize:11,fontWeight:600,color:'var(--text2)',textTransform:'uppercase',letterSpacing:'0.05em',display:'block',marginBottom:4}}>{l}</label>
               <input type={t} value={form[k]} onChange={e=>upd(k,e.target.value)} placeholder={ph}
@@ -108,18 +170,41 @@ function AddCompanyModal({onSave,onClose}){
 }
 
 export default function Placement(){
-  const{data,loading}=useData('getPlacementStats');
+  const{data:stats,loading:statsLoading}=useData('getPlacementStats');
+  const{data:rows,loading:rowsLoading}=useData('getPlacementRows');
   const[showUpload,setShowUpload]=useState(false);
   const[showAdd,setShowAdd]=useState(false);
-  const[companies,setCompanies]=useState(INIT_COMPANIES);
-  if(loading||!data)return<LoadingSpinner/>;
+  const[companies,setCompanies]=useState([]);
+  const[selectedBatch,setSelectedBatch]=useState('All');
+  const[selectedSection,setSelectedSection]=useState('All');
 
-  const placed=companies.reduce((a,c)=>a+c.students,0);
-  const pkgDistData=PKG_DIST;
+  useEffect(()=>{
+    if(rows){
+      setCompanies(groupPlacementRows(rows));
+    }
+  },[rows]);
+  
+  if(statsLoading||rowsLoading||!stats)return<LoadingSpinner/>;
+
+  // Filter companies by batch and section
+  const filteredCompanies=companies.filter(c=>{
+    const batchMatch=selectedBatch==='All'||c.batch===selectedBatch;
+    const sectionMatch=selectedSection==='All'||c.section===selectedSection;
+    return batchMatch&&sectionMatch;
+  });
+
+  const placed=filteredCompanies.reduce((a,c)=>a+c.students,0);
+  const pkgDistData=buildPackageDistribution(rows || []);
   const pieData=[
     {name:'Placed',   value:placed,        fill:'#16a34a'},
-    {name:'Not Placed',value:data.eligible-placed,fill:'#e2e6ed'},
+    {name:'Not Placed',value:stats.eligible-placed,fill:'#e2e6ed'},
   ];
+
+  // Comparison data: batch vs section placement stats
+  const batchData=buildBatchData(rows || []);
+  const sectionData=buildSectionData(rows || []);
+  const allBatches=batchData.map(item=>item.name);
+  const allSections=sectionData.map(item=>item.name);
 
   return(
     <div style={{padding:'24px 28px'}}>
@@ -138,14 +223,34 @@ export default function Placement(){
 
       {showUpload&&<UploadPanel onClose={()=>setShowUpload(false)} onSuccess={()=>setShowUpload(false)}/>}
 
+      {/* Filter Controls */}
+      <Card style={{marginBottom:16,padding:'12px 16px',display:'flex',gap:16,alignItems:'center'}}>
+        <div>
+          <label style={{fontSize:11,fontWeight:600,color:'var(--text2)',textTransform:'uppercase',letterSpacing:'0.05em',display:'block',marginBottom:4}}>Batch</label>
+          <select value={selectedBatch} onChange={e=>setSelectedBatch(e.target.value)}
+            style={{padding:'6px 10px',borderRadius:6,border:'1px solid var(--border)',background:'var(--surface)',fontSize:12,color:'var(--text)',outline:'none',cursor:'pointer'}}>
+            <option>All</option>
+            {allBatches.map(b=><option key={b}>{b}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={{fontSize:11,fontWeight:600,color:'var(--text2)',textTransform:'uppercase',letterSpacing:'0.05em',display:'block',marginBottom:4}}>Section</label>
+          <select value={selectedSection} onChange={e=>setSelectedSection(e.target.value)}
+            style={{padding:'6px 10px',borderRadius:6,border:'1px solid var(--border)',background:'var(--surface)',fontSize:12,color:'var(--text)',outline:'none',cursor:'pointer'}}>
+            <option>All</option>
+            {allSections.map(s=><option key={s}>{s}</option>)}
+          </select>
+        </div>
+      </Card>
+
       {/* KPIs */}
       <div className="fade-up-1" style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:12,marginBottom:16}}>
         {[
-          {label:'Placement Rate',   value:`${Math.round(placed/data.eligible*100)}%`,color:'green', icon:TrendingUp},
+          {label:'Placement Rate',   value:`${stats.eligible?Math.round(placed/stats.eligible*100):0}%`,color:'green', icon:TrendingUp},
           {label:'Students Placed',  value:`${placed}`,     color:'blue',  icon:Users},
-          {label:'Eligible',         value:`${data.eligible}`,color:'blue',icon:Award},
-          {label:'Avg Package',      value:`₹${data.avgPackage}L`,color:'gold',icon:IndianRupee},
-          {label:'Highest Package',  value:`₹${Math.max(...companies.map(c=>c.package))}L`,color:'purple',icon:Building2},
+          {label:'Eligible',         value:`${stats.eligible}`,color:'blue',icon:Award},
+          {label:'Avg Package',      value:`₹${filteredCompanies.length>0?(filteredCompanies.reduce((a,c)=>a+c.package,0)/filteredCompanies.length).toFixed(2):'0'}L`,color:'gold',icon:IndianRupee},
+          {label:'Highest Package',  value:`₹${filteredCompanies.length>0?Math.max(...filteredCompanies.map(c=>c.package)):'0'}L`,color:'purple',icon:Building2},
         ].map(s=>{
           const Icon=s.icon;
           const COLS={green:{bg:'var(--green-bg)',text:'var(--green)',bar:'var(--green)'},blue:{bg:'var(--accent-bg)',text:'var(--accent)',bar:'var(--accent)'},gold:{bg:'var(--gold-bg)',text:'var(--gold)',bar:'var(--gold)'},purple:{bg:'var(--purple-bg)',text:'var(--purple)',bar:'var(--purple)'}};
@@ -199,6 +304,42 @@ export default function Placement(){
         </Card>
       </div>
 
+      {/* Comparison Graphs */}
+      <div className="fade-up-2" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}>
+        <Card>
+          <h3 style={{fontFamily:'var(--font-display)',fontWeight:700,fontSize:14,marginBottom:4}}>Batch Comparison</h3>
+          <p style={{fontSize:11,color:'var(--text3)',marginBottom:10}}>Placement & avg package by batch</p>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={batchData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)"/>
+              <XAxis dataKey="name" tick={{fill:'var(--text3)',fontSize:11}} axisLine={false} tickLine={false}/>
+              <YAxis yAxisId="left" tick={{fill:'var(--text3)',fontSize:11}} axisLine={false} tickLine={false}/>
+              <YAxis yAxisId="right" orientation="right" tick={{fill:'var(--text3)',fontSize:11}} axisLine={false} tickLine={false}/>
+              <Tooltip contentStyle={TS.contentStyle}/>
+              <Legend wrapperStyle={{fontSize:12}}/>
+              <Bar yAxisId="left" dataKey="placed" fill="var(--accent)" name="Placed" radius={[5,5,0,0]}/>
+              <Bar yAxisId="right" dataKey="avgPackage" fill="var(--gold)" name="Avg Package" radius={[5,5,0,0]}/>
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card>
+          <h3 style={{fontFamily:'var(--font-display)',fontWeight:700,fontSize:14,marginBottom:4}}>Section Comparison</h3>
+          <p style={{fontSize:11,color:'var(--text3)',marginBottom:10}}>Placement & avg package by section</p>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={sectionData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)"/>
+              <XAxis dataKey="name" tick={{fill:'var(--text3)',fontSize:11}} axisLine={false} tickLine={false}/>
+              <YAxis yAxisId="left" tick={{fill:'var(--text3)',fontSize:11}} axisLine={false} tickLine={false}/>
+              <YAxis yAxisId="right" orientation="right" tick={{fill:'var(--text3)',fontSize:11}} axisLine={false} tickLine={false}/>
+              <Tooltip contentStyle={TS.contentStyle}/>
+              <Legend wrapperStyle={{fontSize:12}}/>
+              <Bar yAxisId="left" dataKey="placed" fill="var(--accent)" name="Placed" radius={[5,5,0,0]}/>
+              <Bar yAxisId="right" dataKey="avgPackage" fill="var(--gold)" name="Avg Package" radius={[5,5,0,0]}/>
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+      </div>
+
       {/* Company table */}
       <div className="fade-up-3">
         <Card style={{padding:0}}>
@@ -209,12 +350,13 @@ export default function Placement(){
             </div>
             <span style={{fontSize:12,color:'var(--text3)'}}>{placed} total placed</span>
           </div>
-          <Table headers={['Company','Type','Batch','Package','Students','Share']}>
-            {[...companies].sort((a,b)=>b.package-a.package).map((c,i)=>(
+          <Table headers={['Company','Type','Batch','Section','Package','Students','Share']}>
+            {[...filteredCompanies].sort((a,b)=>b.package-a.package).map((c,i)=>(
               <Tr key={i}>
                 <Td><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{width:8,height:8,borderRadius:'50%',background:c.color,flexShrink:0}}/><span style={{fontWeight:600,color:'var(--text)',fontSize:13}}>{c.company}</span></div></Td>
                 <Td><span style={{fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:20,background:'var(--accent-bg)',color:'var(--accent)'}}>{c.type}</span></Td>
                 <Td style={{fontSize:12}}>{c.batch}</Td>
+                <Td style={{fontSize:12,fontWeight:600}}>{c.section}</Td>
                 <Td style={{fontFamily:'var(--font-mono)',fontWeight:700,color:'var(--green)',fontSize:12}}>₹{c.package}L</Td>
                 <Td>{c.students}</Td>
                 <Td>

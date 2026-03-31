@@ -143,6 +143,11 @@ export const dataService = {
     return apiFetch('/placement/stats');
   },
 
+  async getPlacementRows() {
+    if (USE_MOCK) { await delay(); return _overrides.placementRows ?? []; }
+    return apiFetch('/placement/rows');
+  },
+
   // Upload
   async uploadFile(type, file) {
     if (USE_MOCK) {
