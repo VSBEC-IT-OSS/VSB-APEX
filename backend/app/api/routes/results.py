@@ -90,3 +90,25 @@ def subject_stats(
 ):
     """Get statistics for each subject"""
     return svc.get_subject_stats(db, semester)
+
+
+@router.get("/arrear-summary")
+def arrear_summary(db: Session = Depends(get_db), _=Depends(get_current_user)):
+    """Arrear counts grouped by year and section"""
+    return svc.get_arrear_summary(db)
+
+
+@router.get("/department-totals")
+def department_totals(db: Session = Depends(get_db), _=Depends(get_current_user)):
+    """Total students, arrear count, and pass% for the department"""
+    return svc.get_department_totals(db)
+
+
+@router.get("/cgpa-toppers")
+def cgpa_toppers(
+    limit: int = Query(5, ge=1, le=20),
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """Top students by average marks (latest semester)"""
+    return svc.get_cgpa_toppers(db, limit)

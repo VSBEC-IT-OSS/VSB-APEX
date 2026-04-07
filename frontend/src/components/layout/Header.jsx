@@ -1,42 +1,25 @@
 // frontend/src/components/layout/Header.jsx
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Upload, Bell, ChevronRight, FileDown, LogOut } from 'lucide-react';
+import { Upload, Bell, ChevronRight, LogOut, Menu } from 'lucide-react';
 import UploadModal from '../ui/UploadModal.jsx';
-import { dataService } from '../../data/dataService.js';
 
 const CRUMBS = {
   '/':            'Overview',
   '/attendance':  'Attendance',
   '/results':     'Results',
-  '/insights':    'Insights',
   '/placement':   'Placement',
   '/internal':    'Internal Tests',
-  '/goals':       'Goal Tracking',
+  '/settings':    'User Settings',
 };
 
 const now = new Date().toLocaleDateString('en-IN', {
   day: 'numeric', month: 'long', year: 'numeric',
 });
 
-export default function Header({ user, onLogout }) {
+export default function Header({ user, onLogout, onMenuToggle }) {
   const { pathname } = useLocation();
   const [showUpload, setShowUpload] = useState(false);
-  const [pptLoading, setPptLoading] = useState(false);
-
-  async function handlePPT() {
-    setPptLoading(true);
-    try {
-      const res = await dataService.generatePPT();
-      if (res.mock) {
-        alert('PPT generation is available once the backend is connected (Phase 5).');
-      } else if (res.url) {
-        window.open(res.url, '_blank');
-      }
-    } finally {
-      setPptLoading(false);
-    }
-  }
 
   return (
     <>
@@ -47,27 +30,34 @@ export default function Header({ user, onLogout }) {
         padding:'0 24px', position:'sticky', top:0, zIndex:10,
         boxShadow:'0 1px 4px rgba(0,0,0,0.04)',
       }}>
-        {/* Breadcrumb */}
-        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-          <span style={{ fontSize:12, color:'var(--text3)' }}>VSB-APEX</span>
-          <ChevronRight size={13} color="var(--border2)" />
-          <span style={{ fontSize:13, fontWeight:600, color:'var(--accent)' }}>
-            {CRUMBS[pathname] ?? 'Overview'}
-          </span>
+        {/* Left: menu toggle + breadcrumb */}
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <button
+            onClick={onMenuToggle}
+            title="Toggle sidebar"
+            style={{
+              width:32, height:32, borderRadius:7,
+              background:'var(--surface2)', color:'var(--text2)',
+              border:'1px solid var(--border)',
+              display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer',
+              flexShrink:0,
+            }}
+          >
+            <Menu size={15} />
+          </button>
+
+          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+            <span style={{ fontSize:12, color:'var(--text3)' }}>VSB-APEX</span>
+            <ChevronRight size={13} color="var(--border2)" />
+            <span style={{ fontSize:13, fontWeight:600, color:'var(--accent)' }}>
+              {CRUMBS[pathname] ?? 'Overview'}
+            </span>
+          </div>
         </div>
 
         {/* Right actions */}
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <span style={{ fontSize:12, color:'var(--text3)', marginRight:4 }}>{now}</span>
-
-          <button onClick={handlePPT} disabled={pptLoading} style={{
-            display:'flex', alignItems:'center', gap:5,
-            padding:'6px 13px', borderRadius:7, fontSize:12.5, fontWeight:500,
-            background:'var(--surface2)', color:'var(--text2)',
-            border:'1px solid var(--border)', cursor:'pointer',
-          }}>
-            <FileDown size={13} /> {pptLoading ? 'Generating…' : 'Export PPT'}
-          </button>
 
           <button onClick={() => setShowUpload(true)} style={{
             display:'flex', alignItems:'center', gap:5,

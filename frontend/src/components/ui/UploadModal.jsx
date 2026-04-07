@@ -3,10 +3,10 @@ import { dataService } from '../../data/dataService.js';
 import { Upload, X, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react';
 
 const TYPES = [
-  { key:'attendance', label:'Attendance Data',     desc:'Daily attendance records', cols:'Student_ID, Department, Year, Section, Date' },
-  { key:'results',    label:'Exam Results',        desc:'Semester result sheet',    cols:'Student_ID, Department, Year, Section, Semester, Subject_Code, Total_Marks' },
-  { key:'internal',   label:'Internal Test Marks', desc:'Test 1, 2 & 3 marks',     cols:'Student_ID, Department, Year, Section, Subject_Code, Test_Number, Marks_Scored' },
-  { key:'placement',  label:'Placement Data',      desc:'Company placement records', cols:'Student_ID, Department, Year, Section, Company, Package_LPA' },
+  { key:'attendance', label:'Attendance Data',     desc:'Daily attendance records', cols:'Student_ID, Student_Name, Department, Year, Section, Date' },
+  { key:'results',    label:'Exam Results',        desc:'Semester result sheet',    cols:'Student_ID, Student_Name, Department, Year, Section, Semester, Subject_Code, Total_Marks' },
+  { key:'internal',   label:'Internal Test Marks', desc:'Test 1, 2 & 3 marks',     cols:'Student_ID, Student_Name, Department, Year, Section, Subject_Code, Test_Number, Marks_Scored' },
+  { key:'placement',  label:'Placement Data',      desc:'Company placement records', cols:'Student_ID, Student_Name, Department, Year, Section, Company, Package_LPA' },
 ];
 
 export default function UploadModal({ onClose }) {

@@ -50,3 +50,12 @@ def available_dates(
     _=Depends(get_current_user),
 ):
     return svc.get_available_dates(db, db_bio)
+
+
+@router.get("/today")
+def today_summary(
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """Today's attendance % and per-section absentee breakdown."""
+    return svc.get_today_absentees(db)

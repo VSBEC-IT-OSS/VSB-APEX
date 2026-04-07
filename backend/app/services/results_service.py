@@ -282,3 +282,73 @@ def get_subject_stats(db: Session, semester: Optional[int] = None) -> List[Dict]
         }
         for r in rows
     ]
+
+
+def get_arrear_summary(db: Session) -> List[Dict]:
+    """Return arrear counts grouped by year and section."""
+    rows = db.query(
+        Result.year,
+        Result.section,
+        func.count(func.distinct(Result.student_id)).label("total_students"),
+        func.count(func.distinct(
+            case((Result.has_arrear == True, Result.student_id), else_=None)
+        )).label("with_arrears"),
+    ).group_by(Result.year, Result.section).order_by(Result.year, Result.section).all()
+
+    return [
+        {
+            "year": r.year,
+            "section": r.section,
+            "totalStudents": r.total_students,
+            "withArrears": r.with_arrears,
+        }
+        for r in rows
+    ]
+
+
+def get_department_totals(db: Session) -> Dict:
+    """Return total student count and arrear counts for the department."""
+    total = db.query(func.count(func.distinct(Result.student_id))).scalar() or 0
+    with_arrears = db.query(func.count(func.distinct(Result.student_id))).filter(
+        Result.has_arrear == True
+    ).scalar() or 0
+    pass_pct = round(
+        db.query(func.count()).filter(Result.is_pass == True).scalar() /
+        max(db.query(func.count()).scalar(), 1) * 100, 1
+    )
+    return {
+        "totalStudents": total,
+        "withArrears": with_arrears,
+        "passPercentage": pass_pct,
+    }
+
+
+def get_cgpa_toppers(db: Session, limit: int = 5) -> List[Dict]:
+    """Return top students by average total marks (proxy CGPA), latest semester."""
+    # Get the latest semester in DB
+    latest_sem = db.query(func.max(Result.semester)).scalar()
+    if not latest_sem:
+        return []
+
+    rows = db.query(
+        Result.student_id,
+        Result.student_name,
+        Result.year,
+        Result.section,
+        func.avg(Result.total_marks).label("avg_marks"),
+    ).filter(Result.semester == latest_sem).group_by(
+        Result.student_id, Result.student_name, Result.year, Result.section,
+    ).order_by(func.avg(Result.total_marks).desc()).limit(limit).all()
+
+    return [
+        {
+            "studentId": r.student_id,
+            "name": r.student_name or r.student_id,
+            "year": r.year,
+            "section": r.section,
+            "avgMarks": round(r.avg_marks, 1) if r.avg_marks else 0,
+            "cgpa": round((r.avg_marks or 0) / 10, 2),
+            "semester": latest_sem,
+        }
+        for r in rows
+    ]

@@ -15,11 +15,6 @@ export const clearAuthToken = () => { _token = null; localStorage.removeItem('vs
 export const getAuthToken   = () => _token;
 export const isLoggedIn     = () => !!_token;
 
-// ── Data overrides (Excel upload) ─────────────────────────────
-let _overrides = {};
-export const setDataOverride = (key, data) => { _overrides[key] = data; };
-export const clearOverrides  = () => { _overrides = {}; };
-
 // ── Fetch helper ──────────────────────────────────────────────
 async function apiFetch(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -33,12 +28,9 @@ async function apiFetch(path, options = {}) {
 
   if (res.status === 401) {
     clearAuthToken();
-    if (path === '/auth/login') {
-      throw new Error('Invalid email or password.');
-    }
+    if (path === '/auth/login') throw new Error('Invalid email or password.');
     throw new Error('Session expired. Please log in again.');
   }
-
   if (!res.ok) throw new Error(`API error ${res.status}`);
   return res.json();
 }
@@ -64,21 +56,25 @@ export const dataService = {
     setAuthToken(data.access_token);
     return data;
   },
-
   logout() { clearAuthToken(); },
 
-  // Attendance
-  async getAttendanceOverview() {
-    return apiFetch('/attendance/overview');
+  // ── Attendance ──────────────────────────────────────────────
+  async getAttendanceOverview(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return apiFetch(`/attendance/overview${q ? '?' + q : ''}`);
   },
-  async getAttendanceBySections() {
-    return apiFetch('/attendance/section');
+  async getAttendanceBySections(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return apiFetch(`/attendance/section${q ? '?' + q : ''}`);
   },
   async getAvailableAttendanceDates() {
     return apiFetch('/attendance/available-dates');
   },
+  async getAttendanceToday() {
+    return apiFetch('/attendance/today');
+  },
 
-  // Results
+  // ── Results ──────────────────────────────────────────────────
   async getResultsOverview() {
     return apiFetch('/results/overview');
   },
@@ -88,8 +84,17 @@ export const dataService = {
   async getResultsBySection() {
     return apiFetch('/results/section');
   },
+  async getArrearSummary() {
+    return apiFetch('/results/arrear-summary');
+  },
+  async getDepartmentTotals() {
+    return apiFetch('/results/department-totals');
+  },
+  async getCGPAToppers(limit = 5) {
+    return apiFetch(`/results/cgpa-toppers?limit=${limit}`);
+  },
 
-  // Internal Tests
+  // ── Internal Tests ───────────────────────────────────────────
   async getInternalOverview() {
     return apiFetch('/internal/overview');
   },
@@ -99,38 +104,28 @@ export const dataService = {
   async getInternalBySubject() {
     return apiFetch('/internal/subject');
   },
-
-  // Goals
-  async getGoals() {
-    return apiFetch('/goals');
-  },
-  async updateGoal(id, updates) {
-    return apiFetch(`/goals/${id}`, { method: 'PATCH', body: JSON.stringify(updates) });
+  async getInternalToppers(topN = 3) {
+    return apiFetch(`/internal/toppers?top_n=${topN}`);
   },
 
-  // Insights
-  async getInsights() {
-    return apiFetch('/insights');
-  },
-
-  // Placement
+  // ── Placement ────────────────────────────────────────────────
   async getPlacementStats() {
     return apiFetch('/placement/stats');
   },
-
   async getPlacementRows() {
     return apiFetch('/placement/rows');
   },
+  async getTopPackages(limit = 3) {
+    return apiFetch(`/placement/top-packages?limit=${limit}`);
+  },
+  async getUnplacedCount() {
+    return apiFetch('/placement/unplaced-count');
+  },
 
-  // Upload
+  // ── Upload ───────────────────────────────────────────────────
   async uploadFile(type, file) {
     const fd = new FormData();
     fd.append('file', file);
     return apiUpload(`/upload/${type}`, fd);
-  },
-
-  // PPT Export
-  async generatePPT() {
-    return apiFetch('/generate-ppt');
   },
 };

@@ -6,7 +6,7 @@ from app.core.config import settings
 from app.db.database import engine, Base
 from app.api.routes import (
     auth, upload, attendance, results,
-    insights, placement, internal, goals, users,
+    placement, internal, users,
 )
 
 # Create all tables (including new activity_logs)
@@ -15,7 +15,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="VSB-APEX API",
     description="Academic Performance EXchange — Dept of IT",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 app.add_middleware(
@@ -32,10 +32,8 @@ app.include_router(upload.router,     prefix=P)
 app.include_router(attendance.router, prefix=P)
 app.include_router(results.router,    prefix=P)
 app.include_router(internal.router,   prefix=P)
-app.include_router(insights.router,   prefix=P)
-app.include_router(goals.router,      prefix=P)
 app.include_router(placement.router,  prefix=P)
-app.include_router(users.router,      prefix=P)   # ← NEW
+app.include_router(users.router,      prefix=P)
 
 
 @app.get("/health")

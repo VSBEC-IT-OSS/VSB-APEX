@@ -172,3 +172,33 @@ def batch_section(batch: str, section: str, _=Depends(get_current_user), db: Ses
         "avgPackage": round(avg_pkg, 2),
         "companies": companies,
     }
+
+
+@router.get("/top-packages")
+def top_packages(
+    limit: int = 3,
+    _=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Top N students by package for the dashboard scorecard hover."""
+    rows = db.query(Placement).order_by(Placement.package_lpa.desc()).limit(limit).all()
+    return [
+        {
+            "name": p.student_name or p.student_id,
+            "company": p.company,
+            "package_lpa": p.package_lpa,
+            "year": p.year,
+            "section": p.section,
+        }
+        for p in rows
+    ]
+
+
+@router.get("/unplaced-count")
+def unplaced_count(_=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Estimate of students yet to be placed based on AttendanceSummary total vs. placed count."""
+    placed = db.query(func.count(func.distinct(Placement.student_id))).scalar() or 0
+    # Eligible = placed + fixed buffer of 20 (as in /stats)
+    eligible = placed + 20
+    unplaced = eligible - placed
+    return {"placed": placed, "eligible": eligible, "unplaced": unplaced}

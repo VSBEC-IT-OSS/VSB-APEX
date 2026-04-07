@@ -6,6 +6,7 @@ from typing import Optional
 from app.db.database import get_db
 from app.api.deps import get_current_user
 from app.models.internal_test import InternalTest
+from app.services import internal_test_service as it_svc
 
 router = APIRouter(prefix="/internal", tags=["Internal Tests"])
 
@@ -73,3 +74,13 @@ def by_subject(db: Session = Depends(get_db), _=Depends(get_current_user)):
         elif scores[2] < scores[0] - 2: s["trend"] = "down"
         else:                            s["trend"] = "flat"
     return result
+
+
+@router.get("/toppers")
+def latest_toppers(
+    top_n: int = Query(3, ge=1, le=10),
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """Top students per year/section for the most recent internal test."""
+    return it_svc.get_latest_test_toppers(db, top_n)

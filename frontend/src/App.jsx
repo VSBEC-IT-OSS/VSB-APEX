@@ -8,24 +8,29 @@ import Overview      from './pages/Overview.jsx';
 import Attendance    from './pages/Attendance.jsx';
 import Results       from './pages/Results.jsx';
 import InternalTests from './pages/InternalTests.jsx';
-import Insights      from './pages/Insights.jsx';
-import Goals         from './pages/Goals.jsx';
 import Placement     from './pages/Placement.jsx';
 import UserSettings  from './pages/UserSettings.jsx';
 import { isLoggedIn, clearAuthToken } from './data/dataService.js';
 
 export default function App() {
-  const [apiError, setApiError] = useState('');
-  const [user,    setUser]    = useState(null);
-  const [checked, setChecked] = useState(false);
+  const [apiError,     setApiError]     = useState('');
+  const [user,         setUser]         = useState(null);
+  const [checked,      setChecked]      = useState(false);
+  const [sidebarOpen,  setSidebarOpen]  = useState(() => {
+    // Persist sidebar state across refreshes
+    const saved = localStorage.getItem('vsb_sidebar');
+    if (saved !== null) return saved === 'true';
+    return window.innerWidth > 1024; // Default to open on PC (large screens), collapsed on Tablet/Mobile
+  });
 
   useEffect(() => {
-    // Check if API_BASE is set
     const api = import.meta.env.VITE_API_BASE;
-    if (!api) {
-      setApiError('❌ VITE_API_BASE not configured. Check frontend/.env');
-    }
+    if (!api) setApiError('❌ VITE_API_BASE not configured. Check frontend/.env');
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('vsb_sidebar', sidebarOpen);
+  }, [sidebarOpen]);
 
   if (apiError) {
     return (
@@ -36,10 +41,8 @@ export default function App() {
     );
   }
 
-  // Restore session from localStorage on first load
   useEffect(() => {
     if (isLoggedIn()) {
-      // In production this would decode the JWT; mock session for now
       const stored = localStorage.getItem('vsb_user');
       if (stored) {
         try { setUser(JSON.parse(stored)); } catch { setUser({ name:'Dr. S. Ramesh', role:'hod' }); }
@@ -61,37 +64,29 @@ export default function App() {
     setUser(null);
   }
 
-  if (!checked) return null; // avoid flash
-
+  if (!checked) return null;
   if (!user) return <Login onLogin={handleLogin} />;
 
   return (
     <BrowserRouter>
       <div style={{ display:'flex', minHeight:'100vh' }}>
-        {/* Pass user so Sidebar can gate admin links */}
-        <Sidebar user={user} />
-
-        <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'auto' }}>
-          <Header user={user} onLogout={handleLogout} />
+        <Sidebar user={user} isOpen={sidebarOpen} onToggle={() => setSidebarOpen(v => !v)} />
+        <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'auto', minWidth:0 }}>
+          <Header user={user} onLogout={handleLogout} onMenuToggle={() => setSidebarOpen(v => !v)} />
           <main style={{ flex:1, background:'var(--bg)', overflowY:'auto' }}>
             <Routes>
               <Route path="/"          element={<Overview />}      />
               <Route path="/attendance"element={<Attendance />}    />
               <Route path="/results"   element={<Results />}       />
               <Route path="/internal"  element={<InternalTests />} />
-              <Route path="/insights"  element={<Insights />}      />
-              <Route path="/goals"     element={<Goals />}         />
               <Route path="/placement" element={<Placement />}     />
-
-              {/* Admin-only route — redirect non-admins to home */}
               <Route
                 path="/settings"
-                element={
-                  user.role === 'admin'
-                    ? <UserSettings />
-                    : <Navigate to="/" replace />
-                }
+                element={user.role === 'admin' ? <UserSettings /> : <Navigate to="/" replace />}
               />
+              {/* Redirect removed pages to home */}
+              <Route path="/insights"  element={<Navigate to="/" replace />} />
+              <Route path="/goals"     element={<Navigate to="/" replace />} />
             </Routes>
           </main>
         </div>

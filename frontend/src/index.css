@@ -68,3 +68,13 @@ input, select { font-family: var(--font-body); }
 .fade-up-3 { animation: fadeUp 0.35s 0.12s ease both; }
 .fade-up-4 { animation: fadeUp 0.35s 0.16s ease both; }
 .fade-up-5 { animation: fadeUp 0.35s 0.20s ease both; }
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

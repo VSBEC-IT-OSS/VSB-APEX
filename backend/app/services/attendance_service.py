@@ -30,6 +30,70 @@ def get_available_dates(db: Session, db_bio: Session = None) -> List[str]:
     return combined
 
 
+def get_today_absentees(db: Session) -> Dict:
+    """Return today's attendance % and absentee breakdown by Dept/Year/Section."""
+    today = date.today()
+
+    # Students who WERE present today (from local records)
+    present_today = db.query(
+        AttendanceRecord.department,
+        AttendanceRecord.year,
+        AttendanceRecord.section,
+        func.count(func.distinct(AttendanceRecord.student_id)).label("present"),
+    ).filter(AttendanceRecord.date == today).group_by(
+        AttendanceRecord.department,
+        AttendanceRecord.year,
+        AttendanceRecord.section,
+    ).all()
+
+    if not present_today:
+        return {"date": today.isoformat(), "overall": None, "absentees": [], "hasData": False}
+
+    # Total known students per section (from AttendanceSummary)
+    totals_q = db.query(
+        AttendanceSummary.department,
+        AttendanceSummary.year,
+        AttendanceSummary.section,
+        func.count(func.distinct(AttendanceSummary.student_id)).label("total"),
+    ).group_by(
+        AttendanceSummary.department,
+        AttendanceSummary.year,
+        AttendanceSummary.section,
+    ).all()
+
+    totals = {f"{r.department}-{r.year}-{r.section}": r.total for r in totals_q}
+
+    absentees = []
+    total_present = 0
+    total_students = 0
+
+    for r in present_today:
+        key = f"{r.department}-{r.year}-{r.section}"
+        total = totals.get(key, r.present)
+        absent = max(0, total - r.present)
+        absentees.append({
+            "dept": r.department or "IT",
+            "year": r.year,
+            "section": r.section,
+            "present": r.present,
+            "total": total,
+            "absent": absent,
+        })
+        total_present += r.present
+        total_students += total
+
+    overall_pct = round(total_present / total_students * 100, 1) if total_students else 0
+
+    return {
+        "date": today.isoformat(),
+        "overall": overall_pct,
+        "totalPresent": total_present,
+        "totalStudents": total_students,
+        "absentees": sorted(absentees, key=lambda x: (x["year"], x["section"])),
+        "hasData": True,
+    }
+
+
 def bulk_upsert_attendance(db: Session, rows: List[Dict]) -> Dict:
     inserted, skipped = 0, 0
     for row in rows:
