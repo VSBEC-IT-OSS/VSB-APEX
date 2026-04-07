@@ -50,30 +50,53 @@ def bulk_upsert_attendance(db: Session, rows: List[Dict]) -> Dict:
 def recompute_summary(db: Session):
     """Recompute AttendanceSummary from raw records. Call after every upload."""
     db.query(AttendanceSummary).delete()
+    
+    # 1. Get total unique dates per section/year/dept/subject
+    # This represents the "Total Classes" held for that group.
+    date_counts = db.query(
+        AttendanceRecord.department,
+        AttendanceRecord.year,
+        AttendanceRecord.section,
+        AttendanceRecord.subject_code,
+        func.count(func.distinct(AttendanceRecord.date)).label("total")
+    ).group_by(
+        AttendanceRecord.department,
+        AttendanceRecord.year,
+        AttendanceRecord.section,
+        AttendanceRecord.subject_code
+    ).all()
+    
+    section_totals = {
+        f"{r.department}-{r.year}-{r.section}-{r.subject_code}": r.total 
+        for r in date_counts
+    }
+
+    # 2. Get student-wise attendance count
     rows = db.query(
         AttendanceRecord.student_id,
         AttendanceRecord.student_name,
-        AttendanceRecord.year,
         AttendanceRecord.department,
+        AttendanceRecord.year,
         AttendanceRecord.section,
         AttendanceRecord.subject_code,
         AttendanceRecord.subject_name,
-        func.count().label("total"),
-        func.sum(case((AttendanceRecord.status == "present", 1), else_=0)).label("attended"),
+        func.count().label("attended"),
     ).group_by(
         AttendanceRecord.student_id, AttendanceRecord.student_name,
-        AttendanceRecord.year, AttendanceRecord.department, AttendanceRecord.section,
+        AttendanceRecord.department, AttendanceRecord.year, AttendanceRecord.section,
         AttendanceRecord.subject_code, AttendanceRecord.subject_name,
     ).all()
 
     for r in rows:
-        pct         = round((r.attended / r.total * 100), 2) if r.total else 0
-        absent_days = r.total - r.attended
+        key = f"{r.department}-{r.year}-{r.section}-{r.subject_code}"
+        total = section_totals.get(key, 0)
+        pct         = round((r.attended / total * 100), 2) if total else 0
+        absent_days = total - r.attended
         db.add(AttendanceSummary(
             student_id=r.student_id, student_name=r.student_name,
             year=r.year, department=r.department, section=r.section,
             subject_code=r.subject_code, subject_name=r.subject_name,
-            total_classes=r.total, classes_attended=r.attended,
+            total_classes=total, classes_attended=r.attended,
             attendance_pct=pct, is_excess_leave=(absent_days > 4),
         ))
     db.commit()

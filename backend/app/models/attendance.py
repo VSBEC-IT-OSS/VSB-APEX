@@ -19,8 +19,8 @@ class AttendanceRecord(Base):
     year         = Column(String(20), nullable=False)               # "I Year"
     department   = Column(String(50), nullable=True)               # "IT"
     section      = Column(String(5),  nullable=False)               # "A"
-    subject_code = Column(String(20), nullable=False)
-    subject_name = Column(String(100))
+    subject_code = Column(String(20), nullable=True)
+    subject_name = Column(String(100), nullable=True)
     date         = Column(Date, nullable=False, index=True)
     status       = Column(String(10), nullable=False)               # present | absent
     uploaded_at  = Column(DateTime(timezone=True), server_default=func.now())
@@ -43,8 +43,8 @@ class AttendanceSummary(Base):
     year            = Column(String(20), nullable=False)
     department      = Column(String(50), nullable=True)
     section         = Column(String(5),  nullable=False)
-    subject_code    = Column(String(20), nullable=False)
-    subject_name    = Column(String(100))
+    subject_code    = Column(String(20), nullable=True)
+    subject_name    = Column(String(100), nullable=True)
     total_classes   = Column(Integer, default=0)
     classes_attended= Column(Integer, default=0)
     attendance_pct  = Column(Float, default=0.0)

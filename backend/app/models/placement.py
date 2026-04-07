@@ -9,8 +9,9 @@ class Placement(Base):
     id           =Column(Integer,primary_key=True,index=True)
     student_id   =Column(String(20),index=True,nullable=False)
     student_name =Column(String(100))
-    year         =Column(String(20))
-    section      =Column(String(5),index=True)
+    year         = Column(String(20))
+    department   = Column(String(50), nullable=True)               # "IT"
+    section      = Column(String(5),index=True)
     batch        =Column(String(20),index=True)
     company      =Column(String(120),nullable=False)
     package_lpa  =Column(Float,default=0)
