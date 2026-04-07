@@ -1,241 +1,614 @@
-// frontend/src/pages/Attendance.jsx
-import{useState,useMemo}from'react';
-import{useData}from'../hooks/useData.js';
-import{YEARS}from'../data/mockData.js';
-import Card from'../components/ui/Card.jsx';
-import LoadingSpinner from'../components/ui/LoadingSpinner.jsx';
-import SectionFilter from'../components/ui/SectionFilter.jsx';
-import Badge from'../components/ui/Badge.jsx';
-import PageHeader from'../components/ui/PageHeader.jsx';
-import{Table,Tr,Td}from'../components/ui/Table.jsx';
-import{RadarChart,Radar,PolarGrid,PolarAngleAxis,ResponsiveContainer,Tooltip,BarChart,Bar,XAxis,YAxis,CartesianGrid,Cell,LineChart,Line}from'recharts';
+import { useState, useEffect, useMemo } from "react";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Cell, ReferenceLine
+} from "recharts";
+import { Calendar as CalendarIcon, X, ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { dataService } from "../data/dataService.js";
 
-const TS={contentStyle:{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:8,fontSize:12,boxShadow:'var(--shadow-md)'},labelStyle:{color:'var(--text2)',fontWeight:600}};
-const sc=(a)=>a>=80?'var(--green)':a>=75?'var(--accent)':a>=70?'var(--yellow)':'var(--red)';
-const st=(a)=>a>=80?'good':a>=75?'info':a>=70?'warning':'critical';
+// ── Constants ──────────────────────────────────────────────────────────────────
+const DEPARTMENTS = ["IT","CSE","ECE","EEE","MECH","CIVIL","CHEMICAL",
+  "BIOTECH","BME","AIML [CSE]","AI & DS","CCE","CSBS"];
+const YEARS       = ["I Year","II Year","III Year","IV Year"];
+const SECTIONS    = ["All","A","B","C","D","E","F"];
+const DATE_RANGES = ["Today","This Week","This Month","Last 3 Months","Custom"];
 
-// Pre-defined date ranges
-const DATE_PRESETS=[
-  {label:'This Week',   days:7},
-  {label:'This Month',  days:30},
-  {label:'Last 3 Months',days:90},
-  {label:'This Semester',days:120},
-  {label:'Full Year',   days:365},
+// ── Master class list — every class in the college ────────────────────────────
+// Source: VSB APEX PowerPoint slides 3-6 (IT Dept Meeting 10.03.2026)
+const ALL_CLASSES = [
+  // I Year (from slide 3 — all sections visible)
+  {dept:"CIVIL",      year:"I Year",   section:"A", label:"CIVIL"},
+  {dept:"ECE",        year:"I Year",   section:"F", label:"ECE F"},
+  {dept:"IT",         year:"I Year",   section:"C", label:"IT C"},
+  {dept:"CSBS",       year:"I Year",   section:"A", label:"CSBS"},
+  {dept:"AIML [CSE]", year:"I Year",   section:"B", label:"AIML[CSE]-B"},
+  {dept:"CCE",        year:"I Year",   section:"A", label:"CCE"},
+  {dept:"CHEMICAL",   year:"I Year",   section:"A", label:"CHEMICAL"},
+  {dept:"AI & DS",    year:"I Year",   section:"A", label:"AI & DS-A"},
+  {dept:"ECE",        year:"I Year",   section:"C", label:"ECE C"},
+  {dept:"IT",         year:"I Year",   section:"A", label:"IT A"},
+  {dept:"CSE",        year:"I Year",   section:"B", label:"CSE B"},
+  {dept:"ECE",        year:"I Year",   section:"E", label:"ECE E"},
+  {dept:"EEE",        year:"I Year",   section:"A", label:"EEE"},
+  {dept:"MECH",       year:"I Year",   section:"A", label:"MECH"},
+  {dept:"BIOTECH",    year:"I Year",   section:"A", label:"BIOTECH"},
+  {dept:"ECE",        year:"I Year",   section:"D", label:"ECE D"},
+  {dept:"ECE",        year:"I Year",   section:"B", label:"ECE B"},
+  {dept:"AI & DS",    year:"I Year",   section:"C", label:"AI & DS-C"},
+  {dept:"AI & DS",    year:"I Year",   section:"B", label:"AI & DS-B"},
+  {dept:"IT",         year:"I Year",   section:"B", label:"IT B"},
+  {dept:"CSE",        year:"I Year",   section:"A", label:"CSE A"},
+  {dept:"AI & DS",    year:"I Year",   section:"D", label:"AI & DS-D"},
+  {dept:"AIML [CSE]", year:"I Year",   section:"A", label:"AIML[CSE]-A"},
+  {dept:"ECE",        year:"I Year",   section:"A", label:"ECE A"},
+  {dept:"BME",        year:"I Year",   section:"A", label:"BME"},
+  {dept:"CSE",        year:"I Year",   section:"C", label:"CSE C"},
+  // II Year
+  {dept:"IT",         year:"II Year",  section:"A", label:"IT A"},
+  {dept:"IT",         year:"II Year",  section:"B", label:"IT B"},
+  {dept:"CSE",        year:"II Year",  section:"A", label:"CSE A"},
+  {dept:"CSE",        year:"II Year",  section:"B", label:"CSE B"},
+  {dept:"ECE",        year:"II Year",  section:"A", label:"ECE A"},
+  {dept:"ECE",        year:"II Year",  section:"B", label:"ECE B"},
+  {dept:"ECE",        year:"II Year",  section:"C", label:"ECE C"},
+  {dept:"EEE",        year:"II Year",  section:"A", label:"EEE"},
+  {dept:"MECH",       year:"II Year",  section:"A", label:"MECH"},
+  {dept:"CIVIL",      year:"II Year",  section:"A", label:"CIVIL"},
+  {dept:"AI & DS",    year:"II Year",  section:"A", label:"AI & DS-A"},
+  {dept:"AI & DS",    year:"II Year",  section:"B", label:"AI & DS-B"},
+  {dept:"AIML [CSE]", year:"II Year",  section:"A", label:"AIML[CSE]-A"},
+  {dept:"CSBS",       year:"II Year",  section:"A", label:"CSBS"},
+  {dept:"CCE",        year:"II Year",  section:"A", label:"CCE"},
+  {dept:"BIOTECH",    year:"II Year",  section:"A", label:"BIOTECH"},
+  {dept:"CHEMICAL",   year:"II Year",  section:"A", label:"CHEMICAL"},
+  // III Year
+  {dept:"IT",         year:"III Year", section:"A", label:"IT A"},
+  {dept:"IT",         year:"III Year", section:"B", label:"IT B"},
+  {dept:"CSE",        year:"III Year", section:"A", label:"CSE A"},
+  {dept:"CSE",        year:"III Year", section:"B", label:"CSE B"},
+  {dept:"ECE",        year:"III Year", section:"A", label:"ECE A"},
+  {dept:"ECE",        year:"III Year", section:"B", label:"ECE B"},
+  {dept:"EEE",        year:"III Year", section:"A", label:"EEE"},
+  {dept:"MECH",       year:"III Year", section:"A", label:"MECH"},
+  {dept:"CIVIL",      year:"III Year", section:"A", label:"CIVIL"},
+  {dept:"AI & DS",    year:"III Year", section:"A", label:"AI & DS-A"},
+  {dept:"AIML [CSE]", year:"III Year", section:"A", label:"AIML[CSE]-A"},
+  {dept:"BIOTECH",    year:"III Year", section:"A", label:"BIOTECH"},
+  {dept:"CHEMICAL",   year:"III Year", section:"A", label:"CHEMICAL"},
+  // IV Year
+  {dept:"IT",         year:"IV Year",  section:"A", label:"IT A"},
+  {dept:"IT",         year:"IV Year",  section:"B", label:"IT B"},
+  {dept:"CSE",        year:"IV Year",  section:"A", label:"CSE A"},
+  {dept:"CSE",        year:"IV Year",  section:"B", label:"CSE B"},
+  {dept:"ECE",        year:"IV Year",  section:"A", label:"ECE A"},
+  {dept:"EEE",        year:"IV Year",  section:"A", label:"EEE"},
+  {dept:"MECH",       year:"IV Year",  section:"A", label:"MECH"},
+  {dept:"CIVIL",      year:"IV Year",  section:"A", label:"CIVIL"},
+  {dept:"AI & DS",    year:"IV Year",  section:"A", label:"AI & DS-A"},
+  {dept:"BIOTECH",    year:"IV Year",  section:"A", label:"BIOTECH"},
 ];
 
-// Generate mock trend data for a date range (seeded)
-function mockTrendForRange(days,section){
-  const pts=Math.min(days,12);
-  const step=Math.floor(days/pts);
-  return Array.from({length:pts},(_,i)=>{
-    const d=new Date();d.setDate(d.getDate()-(pts-i)*step);
-    const seed=(i+1)/(pts+1);
-    const base=section==='C'?68:section==='B'?76:82;
-    return{date:d.toLocaleDateString('en-IN',{day:'numeric',month:'short'}),pct:Math.round(base+Math.sin(i)*5)};
-  });
+const filterClasses = (dept, year, section) =>
+  ALL_CLASSES.filter(c =>
+    (dept    === "All" || c.dept    === dept)    &&
+    (year    === "All" || c.year    === year)    &&
+    (section === "All" || c.section === section)
+  );
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  DATA HOOK  ·  Two modes — swap by commenting/uncommenting marked blocks
+// ─────────────────────────────────────────────────────────────────────────────
+function useDashboardData(dept, year, section, dateRange, customFrom, customTo) {
+  const [data,    setData]    = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+
+
+
+    // ╔═══════════════════════════════════════════════════╗
+    // ║  REAL API — uncomment this, comment out MOCK above║
+    // ╚═══════════════════════════════════════════════════╝
+    const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
+    const headers = { 'Authorization': `Bearer ${localStorage.getItem('vsb_token')}` };
+    
+    const p = new URLSearchParams();
+    if (dept    !== "All") p.append("department", dept);
+    if (year    !== "All") p.append("year", year);
+    if (section !== "All") p.append("section", section);
+    const rangeMap = {
+      "Today":"today", "This Week":"week",
+      "This Month":"month", "Last 3 Months":"3months"
+    };
+    if (rangeMap[dateRange]) p.append("range", rangeMap[dateRange]);
+    if (dateRange === "Custom" && customFrom && customTo) {
+      p.append("from", customFrom); p.append("to", customTo);
+    }
+    Promise.all([
+      fetch(`${apiBase}/attendance/section?${p}`, { headers }).then(r => r.json()),
+      fetch(`${apiBase}/attendance/overview?${p}`, { headers }).then(r => r.json()),
+    ]).then(([sections, overview]) => {
+      setData({
+        rows: (sections || []).map(s => ({
+          label: s.section, section: s.section,
+          dept: s.department, year: s.year,
+          avg: s.avg, students: s.students, excessLeave: s.excessLeave,
+        })),
+        totalStudents: overview?.totalStudents || 0,
+        overall:       overview?.overall || 0,
+        totalExcess:   overview?.excessLeave || 0,
+      });
+      setLoading(false);
+    }).catch(() => setLoading(false));
+    // ╔═══════════════════════════════════════════════════╗
+    // ║  END REAL API                                     ║
+    // ╚═══════════════════════════════════════════════════╝
+
+  }, [dept, year, section, dateRange, customFrom, customTo]);
+
+  return { data, loading };
 }
 
-function ProgressBar({pct,color}){
-  return(
-    <div style={{display:'flex',alignItems:'center',gap:10}}>
-      <div style={{flex:1,height:7,background:'var(--surface2)',borderRadius:4,overflow:'hidden'}}>
-        <div style={{width:`${pct}%`,height:'100%',borderRadius:4,background:color,transition:'width .5s'}}/>
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const barColor = avg => avg >= 90 ? "#1d4ed8" : avg >= 85 ? "#3b82f6" : "#ef4444";
+
+const BarLabel = ({ x, y, width, value }) => (
+  <text x={x + width / 2} y={y - 5}
+    fill={value < 85 ? "#ef4444" : "#1e3a5f"}
+    textAnchor="middle" fontSize={10} fontWeight={600}
+    fontFamily="'DM Mono',monospace">
+    {value}
+  </text>
+);
+
+function CustomTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div style={{ background:"#0f172a", borderRadius:10, padding:"12px 16px",
+      boxShadow:"0 8px 32px #0004", minWidth:160 }}>
+      <div style={{ color:"#94a3b8", fontSize:11,
+        fontFamily:"'DM Mono',monospace", marginBottom:4 }}>
+        {d.section} · {d.year}
       </div>
-      <span style={{fontSize:13,fontWeight:600,color:'var(--text)',minWidth:44}}>{pct}%</span>
+      <div style={{ color:"#fff", fontSize:20, fontWeight:800,
+        fontFamily:"'Sora',sans-serif" }}>{d.avg}%</div>
+      <div style={{ color:"#64748b", fontSize:11, marginTop:4 }}>
+        {d.students} students · {d.excessLeave} excess leave
+      </div>
     </div>
   );
 }
 
-export default function Attendance(){
-  const{data,loading}=useData('getAttendanceBySections');
-  const ov=useData('getAttendanceOverview');
-  const[selectedYear,setSelectedYear]=useState('All');
-  const[preset,setPreset]=useState(DATE_PRESETS[2]);
-  const[customFrom,setCustomFrom]=useState('');
-  const[customTo,setCustomTo]=useState('');
-  const[showCustom,setShowCustom]=useState(false);
-  const[focusSection,setFocusSection]=useState(null);
+function Scorecard({ label, value, sub, accent }) {
+  return (
+    <div style={{ background:"#fff", border:`2px solid ${accent}22`,
+      borderTop:`4px solid ${accent}`, borderRadius:12,
+      padding:"20px 24px", flex:1, minWidth:0 }}>
+      <div style={{ fontSize:11, color:"#64748b", letterSpacing:"0.08em",
+        textTransform:"uppercase", fontFamily:"'DM Mono',monospace", marginBottom:8 }}>
+        {label}
+      </div>
+      <div style={{ fontSize:32, fontWeight:800, color:"#0f172a",
+        fontFamily:"'Sora',sans-serif", lineHeight:1 }}>{value}</div>
+      {sub && <div style={{ fontSize:12, color:"#94a3b8", marginTop:6 }}>{sub}</div>}
+    </div>
+  );
+}
 
-  if(loading||ov.loading)return<LoadingSpinner/>;
-
-  const o=ov.data;
-  const filtered=selectedYear==='All'?data:data.filter(r=>r.year===selectedYear);
-
-  // Adjust mock data slightly for different ranges (shorter range → noisier)
-  const rangeMultiplier=preset.days<=7?0.95:preset.days<=30?0.98:1;
-  const adjustedFiltered=filtered.map(r=>({...r,avg:Math.min(99,Math.round(r.avg*rangeMultiplier))}));
-
-  const radarData=YEARS.map(y=>{
-    const rows=data.filter(r=>r.year===y);
-    const avg=rows.length?+(rows.reduce((s,r)=>s+r.avg,0)/rows.length).toFixed(1):0;
-    return{year:y.replace(' Year',''),avg};
-  });
-
-  const trendData=mockTrendForRange(preset.days,focusSection||'A');
-
-  return(
-    <div style={{padding:'24px 28px'}}>
-      <PageHeader title="Attendance Analytics" sub="Section-wise attendance tracking · AY 2024–25"/>
-
-      {/* Date range controls */}
-      <Card style={{marginBottom:16,padding:'14px 18px'}}>
-        <div style={{display:'flex',gap:12,flexWrap:'wrap',alignItems:'center'}}>
-          <div>
-            <p style={{fontSize:11,color:'var(--text3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:5}}>Date Range</p>
-            <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
-              {DATE_PRESETS.map(p=>(
-                <button key={p.label} onClick={()=>{setPreset(p);setShowCustom(false);}} style={{padding:'5px 12px',borderRadius:6,fontSize:12,fontWeight:500,border:'1px solid',background:!showCustom&&preset.label===p.label?'var(--accent)':'var(--surface2)',color:!showCustom&&preset.label===p.label?'#fff':'var(--text2)',borderColor:!showCustom&&preset.label===p.label?'var(--accent)':'var(--border)',cursor:'pointer',transition:'all .12s'}}>
-                  {p.label}
-                </button>
-              ))}
-              <button onClick={()=>setShowCustom(!showCustom)} style={{padding:'5px 12px',borderRadius:6,fontSize:12,fontWeight:500,border:'1px solid',background:showCustom?'var(--accent)':'var(--surface2)',color:showCustom?'#fff':'var(--text2)',borderColor:showCustom?'var(--accent)':'var(--border)',cursor:'pointer',transition:'all .12s'}}>
-                Custom Range
-              </button>
-            </div>
-          </div>
-          {showCustom&&(
-            <div style={{display:'flex',gap:8,alignItems:'center'}}>
-              <div>
-                <p style={{fontSize:11,color:'var(--text3)',fontWeight:600,marginBottom:4}}>From</p>
-                <input type="date" value={customFrom} onChange={e=>setCustomFrom(e.target.value)}
-                  style={{padding:'6px 10px',borderRadius:7,border:'1px solid var(--border)',background:'var(--surface2)',fontSize:12,color:'var(--text)',outline:'none'}}/>
-              </div>
-              <div>
-                <p style={{fontSize:11,color:'var(--text3)',fontWeight:600,marginBottom:4}}>To</p>
-                <input type="date" value={customTo} onChange={e=>setCustomTo(e.target.value)}
-                  style={{padding:'6px 10px',borderRadius:7,border:'1px solid var(--border)',background:'var(--surface2)',fontSize:12,color:'var(--text)',outline:'none'}}/>
-              </div>
-              <button onClick={()=>setPreset({label:`${customFrom} → ${customTo}`,days:Math.max(1,Math.round((new Date(customTo)-new Date(customFrom))/86400000))})}
-                style={{marginTop:16,padding:'6px 14px',borderRadius:7,background:'var(--accent)',color:'#fff',fontSize:12,fontWeight:600,cursor:'pointer',border:'none'}}>
-                Apply
-              </button>
-            </div>
-          )}
-          <div style={{marginLeft:'auto',padding:'6px 14px',borderRadius:20,background:'var(--accent-bg)',fontSize:12,fontWeight:600,color:'var(--accent)'}}>
-            {showCustom&&customFrom&&customTo?`${customFrom} → ${customTo}`:`Last ${preset.days} days`}
-          </div>
-        </div>
-      </Card>
-
-      {/* KPIs */}
-      <div className="fade-up-1" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:16}}>
-        {[
-          {label:'Overall Avg',value:`${o.overall}%`,note:'All sections combined',color:'var(--accent)'},
-          {label:'Total Students',value:o.totalStudents,note:'Enrolled this year',color:'var(--text)'},
-          {label:'Below 75%',value:o.belowThreshold,note:'At risk of eligibility loss',color:'var(--red)'},
-          {label:'Above 75%',value:o.aboveThreshold,note:'Meeting requirements',color:'var(--green)'},
-        ].map(s=>(
-          <Card key={s.label}>
-            <p style={{fontSize:11,color:'var(--text3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em'}}>{s.label}</p>
-            <p style={{fontFamily:'var(--font-display)',fontSize:28,fontWeight:800,color:s.color,marginTop:6,lineHeight:1}}>{s.value}</p>
-            <p style={{fontSize:11,color:'var(--text3)',marginTop:4}}>{s.note}</p>
-          </Card>
+function PillGroup({ options, value, onChange, label }) {
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+      <span style={{ fontSize:11, color:"#94a3b8", textTransform:"uppercase",
+        letterSpacing:"0.08em", fontFamily:"'DM Mono',monospace" }}>{label}</span>
+      <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+        {options.map(o => (
+          <button key={o} onClick={() => onChange(o)} style={{
+            padding:"5px 12px", borderRadius:20,
+            border: value===o ? "none" : "1px solid #e2e8f0",
+            background: value===o ? "#1e3a8a" : "#f8fafc",
+            color: value===o ? "#fff" : "#475569",
+            fontSize:12, fontWeight: value===o ? 700 : 400,
+            cursor:"pointer", fontFamily:"'Sora',sans-serif", transition:"all 0.15s",
+          }}>{o}</button>
         ))}
       </div>
+    </div>
+  );
+}
 
-      <div className="fade-up-2" style={{display:'grid',gridTemplateColumns:'1.6fr 1fr',gap:14,marginBottom:14}}>
-        {/* Section table */}
-        <Card style={{padding:0}}>
-          <div style={{padding:'14px 18px 12px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid var(--border)'}}>
-            <div>
-              <h3 style={{fontFamily:'var(--font-display)',fontWeight:700,fontSize:14}}>Section-wise Attendance</h3>
-              <p style={{fontSize:11,color:'var(--text3)',marginTop:1}}>
-                {showCustom&&customFrom?`${customFrom} → ${customTo}`:preset.label}
-              </p>
-            </div>
-            <SectionFilter years={YEARS} selectedYear={selectedYear} onYearChange={setSelectedYear}/>
-          </div>
-          <Table headers={['Section','Students','Avg Attendance','Status','Below 75%']}>
-            {adjustedFiltered.map(row=>(
-              <Tr key={`${row.year}-${row.section}`} highlight={row.avg<70}>
-                <Td>
-                  <button onClick={()=>setFocusSection(focusSection===row.section?null:row.section)}
-                    style={{fontWeight:600,color:focusSection===row.section?'var(--accent)':'var(--text)',background:'none',border:'none',cursor:'pointer',fontSize:13,textDecoration:focusSection===row.section?'underline':'none'}}>
-                    {row.year} — Sec {row.section}
-                  </button>
-                </Td>
-                <Td>{row.students}</Td>
-                <Td><ProgressBar pct={row.avg} color={sc(row.avg)}/></Td>
-                <Td><Badge type={st(row.avg)}>{st(row.avg)}</Badge></Td>
-                <Td style={{color:row.below75>15?'var(--red)':'var(--text2)',fontWeight:row.below75>15?700:400}}>{row.below75} students</Td>
-              </Tr>
-            ))}
-          </Table>
-        </Card>
+function Dropdown({ options, value, onChange, label }) {
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+      <span style={{ fontSize:11, color:"#94a3b8", textTransform:"uppercase",
+        letterSpacing:"0.08em", fontFamily:"'DM Mono',monospace" }}>{label}</span>
+      <select value={value} onChange={e => onChange(e.target.value)} style={{
+        padding:"7px 32px 7px 12px", borderRadius:8,
+        border:"1px solid #e2e8f0", background:"#f8fafc",
+        color:"#0f172a", fontSize:13, fontWeight:600,
+        fontFamily:"'Sora',sans-serif", cursor:"pointer", appearance:"none",
+        backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+        backgroundRepeat:"no-repeat", backgroundPosition:"right 10px center", minWidth:140,
+      }}>
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+    </div>
+  );
+}
 
-        {/* Radar */}
-        <Card>
-          <h3 style={{fontFamily:'var(--font-display)',fontWeight:700,fontSize:14,marginBottom:4}}>Year-wise Comparison</h3>
-          <p style={{fontSize:11,color:'var(--text3)',marginBottom:10}}>{preset.label}</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <RadarChart data={radarData}>
-              <PolarGrid stroke="var(--border)"/>
-              <PolarAngleAxis dataKey="year" tick={{fill:'var(--text2)',fontSize:12}}/>
-              <Radar dataKey="avg" stroke="var(--accent)" fill="var(--accent)" fillOpacity={0.12} strokeWidth={2}/>
-              <Tooltip {...TS}/>
-            </RadarChart>
-          </ResponsiveContainer>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginTop:10,paddingTop:10,borderTop:'1px solid var(--border)'}}>
-            {radarData.map(r=>(
-              <div key={r.year} style={{padding:'7px 10px',borderRadius:7,background:'var(--surface2)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <span style={{fontSize:12,color:'var(--text2)',fontWeight:500}}>{r.year} Yr</span>
-                <span style={{fontSize:13,fontWeight:700,color:sc(r.avg)}}>{r.avg}%</span>
+// ── Main ──────────────────────────────────────────────────────────────────────
+export default function AttendanceDashboard() {
+  const [dept,       setDept]       = useState("IT");
+  const [year,       setYear]       = useState("I Year");
+  const [section,    setSection]    = useState("All");
+  const [dateRange,  setDateRange]  = useState("This Month");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo,   setCustomTo]   = useState("");
+
+  const [showCal, setShowCal]       = useState(false);
+  const [availDates, setAvailDates] = useState([]);
+  const [calDate, setCalDate]       = useState(new Date());
+
+  useEffect(() => {
+    if (showCal) {
+      dataService.getAvailableAttendanceDates()
+        .then(setAvailDates)
+        .catch(console.error);
+    }
+  }, [showCal]);
+
+  useEffect(() => setSection("All"), [dept, year]);
+
+  const { data, loading } = useDashboardData(
+    dept, year, section, dateRange, customFrom, customTo
+  );
+
+  const manyBars    = data && data.rows.length > 10;
+  const chartHeight = data ? Math.max(300, data.rows.length * 24 + 100) : 300;
+  const headingDept = dept === "All" ? "All Departments" : `${dept} Dept`;
+  const headingYear = year === "All" ? "All Years"       : year;
+
+  return (
+    <div style={{ minHeight:"100vh",
+      background:"linear-gradient(135deg,#f0f4ff 0%,#e8edf8 100%)",
+      fontFamily:"'Sora',sans-serif", padding:"24px" }}>
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+        * { box-sizing:border-box; }
+        button:hover { opacity:.88; }
+        select:focus { outline:2px solid #1e3a8a; outline-offset:1px; }
+      `}</style>
+
+      {/* Header */}
+      <div style={{ marginBottom:24 }}>
+        <div style={{ fontSize:11, color:"#94a3b8", letterSpacing:"0.12em",
+          textTransform:"uppercase", fontFamily:"'DM Mono',monospace" }}>
+          VSB APEX · Attendance
+        </div>
+        <h1 style={{ margin:"4px 0 0", fontSize:26, fontWeight:800, color:"#0f172a" }}>
+          {headingDept} — {headingYear}
+        </h1>
+      </div>
+
+      {/* Controls */}
+      <div style={{ background:"#fff", borderRadius:14, padding:"18px 20px",
+        marginBottom:24, boxShadow:"0 1px 4px #0001",
+        display:"flex", gap:20, flexWrap:"wrap", alignItems:"flex-end" }}>
+        <Dropdown label="Department" options={["All",...DEPARTMENTS]} value={dept}
+          onChange={v => { setDept(v); setSection("All"); }} />
+        <Dropdown label="Year" options={["All",...YEARS]} value={year}
+          onChange={v => { setYear(v); setSection("All"); }} />
+        <Dropdown label="Section" options={SECTIONS} value={section} onChange={setSection} />
+        <PillGroup label="Date Range" options={DATE_RANGES}
+          value={dateRange} onChange={setDateRange} />
+        {dateRange === "Custom" && (
+          <div style={{ display:"flex", gap:8, alignItems:"flex-end" }}>
+            {[["From",customFrom,setCustomFrom],["To",customTo,setCustomTo]].map(([lbl,val,set]) => (
+              <div key={lbl} style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                <span style={{ fontSize:11, color:"#94a3b8", textTransform:"uppercase",
+                  letterSpacing:"0.08em", fontFamily:"'DM Mono',monospace" }}>{lbl}</span>
+                <input type="date" value={val} onChange={e => set(e.target.value)}
+                  style={{ padding:"5px 10px", borderRadius:8,
+                    border:"1px solid #e2e8f0", fontSize:12,
+                    fontFamily:"'Sora',sans-serif", color:"#0f172a" }} />
               </div>
             ))}
           </div>
-        </Card>
+        )}
       </div>
 
-      {/* Trend chart */}
-      <div className="fade-up-3" style={{marginBottom:14}}>
-        <Card>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
-            <div>
-              <h3 style={{fontFamily:'var(--font-display)',fontWeight:700,fontSize:14}}>
-                Attendance Trend{focusSection?` — Section ${focusSection}`:''}
-              </h3>
-              <p style={{fontSize:11,color:'var(--text3)',marginTop:1}}>
-                {preset.label}{focusSection?' · Click a section row to focus':''}
-              </p>
+      {/* Scorecards */}
+      <div style={{ display:"flex", gap:16, marginBottom:24, flexWrap:"wrap" }}>
+        <Scorecard label="Total Students"
+          value={loading ? "—" : data.totalStudents}
+          sub={`${headingDept} · ${headingYear}${section!=="All"?" · Sec "+section:""}`}
+          accent="#1d4ed8" />
+        <Scorecard label="Overall Attendance"
+          value={loading ? "—" : `${data.overall}%`}
+          sub={dateRange} accent="#0ea5e9" />
+        <Scorecard label="4+ Days Leave"
+          value={loading ? "—" : data.totalExcess}
+          sub="Students with excess absence" accent="#ef4444" />
+      </div>
+
+      {/* Bar Chart */}
+      <div style={{ background:"#fff", borderRadius:14, padding:"24px",
+        boxShadow:"0 1px 4px #0001", marginBottom:24 }}>
+        <div style={{ display:"flex", justifyContent:"space-between",
+          alignItems:"center", marginBottom:20, flexWrap:"wrap", gap:12 }}>
+          <div>
+            <div style={{ fontSize:14, fontWeight:700, color:"#0f172a" }}>
+              Class-wise Attendance
             </div>
-            {focusSection&&<button onClick={()=>setFocusSection(null)} style={{fontSize:11,color:'var(--text3)',background:'none',border:'none',cursor:'pointer',textDecoration:'underline'}}>Clear focus</button>}
+            <div style={{ fontSize:11, color:"#94a3b8",
+              fontFamily:"'DM Mono',monospace", marginTop:2 }}>
+              {headingDept} · {headingYear} · {dateRange}
+              {data ? `  ·  ${data.rows.length} classes` : ""}
+            </div>
           </div>
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)"/>
-              <XAxis dataKey="date" tick={{fill:'var(--text3)',fontSize:10}} axisLine={false} tickLine={false}/>
-              <YAxis domain={[60,100]} tick={{fill:'var(--text3)',fontSize:11}} axisLine={false} tickLine={false} unit="%"/>
-              <Tooltip {...TS}/>
-              <Line type="monotone" dataKey="pct" stroke="var(--accent)" strokeWidth={2.5} dot={{fill:'var(--accent)',r:3}} activeDot={{r:5}} name="Attendance %"/>
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-      </div>
-
-      {/* Below 75 bar chart */}
-      <div className="fade-up-4">
-        <Card>
-          <h3 style={{fontFamily:'var(--font-display)',fontWeight:700,fontSize:14,marginBottom:4}}>Students Below 75% — by Section</h3>
-          <p style={{fontSize:11,color:'var(--text3)',marginBottom:14}}>{preset.label}</p>
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={adjustedFiltered} barSize={28}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)"/>
-              <XAxis dataKey={r=>`${r.year.replace(' Year','')}-${r.section}`} tick={{fill:'var(--text3)',fontSize:11}} axisLine={false} tickLine={false}/>
-              <YAxis tick={{fill:'var(--text3)',fontSize:11}} axisLine={false} tickLine={false}/>
-              <Tooltip {...TS}/>
-              <Bar dataKey="below75" radius={[5,5,0,0]} name="Below 75%">
-                {adjustedFiltered.map((r,i)=><Cell key={i} fill={r.below75>15?'#dc2626':r.below75>8?'#b45309':'#16a34a'}/>)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-          <div style={{display:'flex',gap:20,marginTop:10,paddingTop:10,borderTop:'1px solid var(--border)'}}>
-            {[['#dc2626','>15 (Critical)'],['#b45309','9–15 (Warning)'],['#16a34a','≤8 (Good)']].map(([c,l])=>(
-              <span key={l} style={{display:'flex',alignItems:'center',gap:5,fontSize:11,color:'var(--text3)'}}>
-                <span style={{width:10,height:10,borderRadius:3,background:c,display:'inline-block'}}/>{l}
+          <div style={{ display:"flex", gap:14 }}>
+            {[["#1d4ed8","≥90%"],["#3b82f6","85–89%"],["#ef4444","<85%"]].map(([c,l]) => (
+              <span key={l} style={{ fontSize:11, color:"#64748b",
+                display:"flex", alignItems:"center", gap:4 }}>
+                <span style={{ width:10, height:10, borderRadius:2,
+                  background:c, display:"inline-block" }} />{l}
               </span>
             ))}
           </div>
-        </Card>
+        </div>
+
+        {loading ? (
+          <div style={{ height:280, display:"flex", alignItems:"center",
+            justifyContent:"center", color:"#94a3b8", fontSize:13 }}>
+            Loading…
+          </div>
+        ) : data.rows.length === 0 ? (
+          <div style={{ height:200, display:"flex", alignItems:"center",
+            justifyContent:"center", color:"#94a3b8", fontSize:13 }}>
+            No classes match the selected filters.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={chartHeight}>
+            <BarChart data={data.rows}
+              margin={{ top:28, right:20, left:-10,
+                bottom: manyBars ? 90 : 10 }}
+              barCategoryGap="25%">
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <XAxis
+                dataKey="label"
+                angle={manyBars ? -45 : 0}
+                textAnchor={manyBars ? "end" : "middle"}
+                interval={0}
+                tick={{ fontSize: manyBars ? 10 : 12, fill:"#64748b",
+                  fontFamily:"'DM Mono',monospace" }}
+                axisLine={false} tickLine={false} />
+              <YAxis domain={[75,100]}
+                tick={{ fontSize:11, fill:"#94a3b8",
+                  fontFamily:"'DM Mono',monospace" }}
+                axisLine={false} tickLine={false} />
+              <ReferenceLine y={85} stroke="#fbbf24" strokeDasharray="4 4"
+                label={{ value:"85%", position:"insideRight",
+                  fontSize:10, fill:"#fbbf24" }} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill:"#f1f5f9" }} />
+              <Bar dataKey="avg" radius={[5,5,0,0]}
+                label={data.rows.length <= 18 ? <BarLabel /> : false}
+                maxBarSize={52}>
+                {data.rows.map((r,i) => <Cell key={i} fill={barColor(r.avg)} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Table */}
+      <div style={{ background:"#fff", borderRadius:14,
+        overflow:"hidden", boxShadow:"0 1px 4px #0001" }}>
+        <div style={{ padding:"16px 24px", borderBottom:"1px solid #f1f5f9" }}>
+          <span style={{ fontSize:14, fontWeight:700, color:"#0f172a" }}>
+            Class Summary
+          </span>
+          {data && (
+            <span style={{ fontSize:12, color:"#94a3b8", marginLeft:10,
+              fontFamily:"'DM Mono',monospace" }}>
+              {data.rows.length} classes
+            </span>
+          )}
+        </div>
+        <div style={{ overflowX:"auto" }}>
+          <table style={{ width:"100%", borderCollapse:"collapse" }}>
+            <thead>
+              <tr style={{ background:"#f8fafc" }}>
+                {["Class","Dept","Year","Students","Avg Attendance",
+                  "4+ Days Leave","Status"].map(h => (
+                  <th key={h} style={{ padding:"10px 16px", textAlign:"left",
+                    fontSize:11, color:"#64748b", fontWeight:600, whiteSpace:"nowrap",
+                    textTransform:"uppercase", letterSpacing:"0.06em",
+                    fontFamily:"'DM Mono',monospace" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={7} style={{ padding:24, textAlign:"center",
+                  color:"#94a3b8", fontSize:13 }}>Loading…</td></tr>
+              ) : data.rows.length === 0 ? (
+                <tr><td colSpan={7} style={{ padding:24, textAlign:"center",
+                  color:"#94a3b8", fontSize:13 }}>
+                  No data for selected filters.
+                </td></tr>
+              ) : data.rows.map((r,i) => (
+                <tr key={i} style={{ borderTop:"1px solid #f1f5f9",
+                  background: i%2===0 ? "#fff" : "#fafbff" }}>
+                  <td style={{ padding:"11px 16px", fontWeight:700, color:"#0f172a",
+                    fontFamily:"'DM Mono',monospace", fontSize:13 }}>{r.label}</td>
+                  <td style={{ padding:"11px 16px", color:"#475569", fontSize:12 }}>{r.dept}</td>
+                  <td style={{ padding:"11px 16px", color:"#475569", fontSize:12,
+                    whiteSpace:"nowrap" }}>{r.year}</td>
+                  <td style={{ padding:"11px 16px", color:"#475569", fontSize:13 }}>{r.students}</td>
+                  <td style={{ padding:"11px 16px" }}>
+                    <span style={{ fontWeight:700, fontSize:13,
+                      color: r.avg>=90?"#1d4ed8":r.avg>=85?"#0ea5e9":"#ef4444" }}>
+                      {r.avg}%
+                    </span>
+                  </td>
+                  <td style={{ padding:"11px 16px" }}>
+                    <span style={{
+                      background: r.excessLeave>5?"#fef2f2":"#f0fdf4",
+                      color:      r.excessLeave>5?"#ef4444":"#16a34a",
+                      padding:"3px 10px", borderRadius:20,
+                      fontSize:12, fontWeight:600 }}>
+                      {r.excessLeave}
+                    </span>
+                  </td>
+                  <td style={{ padding:"11px 16px" }}>
+                    <span style={{
+                      background: r.avg>=85?"#eff6ff":"#fef2f2",
+                      color:      r.avg>=85?"#1d4ed8":"#ef4444",
+                      padding:"3px 10px", borderRadius:20,
+                      fontSize:11, fontWeight:600 }}>
+                      {r.avg>=85?"Good":"Needs Attention"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style={{ marginTop:16, fontSize:11, color:"#94a3b8",
+        textAlign:"center", fontFamily:"'DM Mono',monospace" }}>
+        VSB APEX v2 · Local DB · Synced from Neon aggregator
+      </div>
+
+      {/* Availability Link */}
+      <div style={{ marginTop: 24, textAlign: "center" }}>
+        <button 
+          onClick={() => setShowCal(true)}
+          style={{
+            background: "none", border: "none", color: "#6366f1",
+            fontSize: 13, fontWeight: 600, cursor: "pointer",
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "8px 16px", borderRadius: 8, transition: "all 0.2s",
+          }}
+          onMouseOver={e => e.target.style.background = "#6366f111"}
+          onMouseOut={e => e.target.style.background = "none"}
+        >
+          <CalendarIcon size={16} />
+          View Data Availability Calendar
+        </button>
+      </div>
+
+      {/* Availability Modal */}
+      {showCal && (
+        <AvailabilityModal 
+          onClose={() => setShowCal(false)} 
+          dates={availDates} 
+          currentDate={calDate}
+          setCurrentDate={setCalDate}
+        />
+      )}
+    </div>
+  );
+}
+
+function AvailabilityModal({ onClose, dates, currentDate, setCurrentDate }) {
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  
+  const daysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
+  const startDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+  
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  
+  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+
+  const isAvailable = (day) => {
+    const d = new Date(year, month, day);
+    // Format to YYYY-MM-DD manually to avoid timezone issues
+    const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return dates.includes(iso);
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)",
+      backdropFilter: "blur(4px)", display: "flex", alignItems: "center",
+      justifyContent: "center", zIndex: 1000, padding: 20
+    }} onClick={onClose}>
+      <div 
+        style={{
+          background: "#fff", borderRadius: 20, width: "100%", maxWidth: 400,
+          boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", overflow: "hidden"
+        }} 
+        onClick={e => e.stopPropagation()}
+      >
+        <div style={{ padding: "24px 24px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc" }}>
+          <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", fontFamily: "'Sora', sans-serif" }}>Data Availability</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}><X size={20} /></button>
+        </div>
+
+        <div style={{ padding: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <button onClick={prevMonth} style={{ background: "#f1f5f9", border: "none", padding: 6, borderRadius: 8, cursor: "pointer" }}><ChevronLeft size={18} /></button>
+            <span style={{ fontWeight: 700, fontSize: 14 }}>{monthNames[month]} {year}</span>
+            <button onClick={nextMonth} style={{ background: "#f1f5f9", border: "none", padding: 6, borderRadius: 8, cursor: "pointer" }}><ChevronRight size={18} /></button>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, textAlign: "center", marginBottom: 8 }}>
+            {["S","M","T","W","T","F","S"].map(d => (
+              <span key={d} style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8" }}>{d}</span>
+            ))}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+            {Array(startDay).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
+            {Array(daysInMonth(year, month)).fill(null).map((_, i) => {
+              const day = i + 1;
+              const hasData = isAvailable(day);
+              const isToday = new Date().toDateString() === new Date(year, month, day).toDateString();
+              
+              return (
+                <div key={day} style={{ 
+                  aspectRatio: "1/1", display: "flex", alignItems: "center", 
+                  justifyContent: "center", fontSize: 13, position: "relative" 
+                }}>
+                  <span style={{ 
+                    zIndex: 2, fontWeight: hasData || isToday ? 700 : 400,
+                    color: hasData ? "#065f46" : isToday ? "#6366f1" : "#475569" 
+                  }}>{day}</span>
+                  {hasData && (
+                    <div style={{ 
+                      position: "absolute", width: 28, height: 28, 
+                      background: "#dcfce7", borderRadius: "50%", zIndex: 1,
+                      border: "1px solid #10b981"
+                    }} />
+                  )}
+                  {isToday && !hasData && (
+                    <div style={{ 
+                      position: "absolute", width: 28, height: 28, 
+                      border: "1px solid #6366f122", borderRadius: "50%", zIndex: 1
+                    }} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: "#64748b" }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#dcfce7", border: "1px solid #10b981" }} />
+              <span>Attendance data available for this date</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: "#64748b" }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", border: "1px solid #6366f122" }} />
+              <span>Current date (no data yet)</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

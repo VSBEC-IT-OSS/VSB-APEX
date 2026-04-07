@@ -46,7 +46,7 @@ class AttendanceSummary(Base):
     total_classes   = Column(Integer, default=0)
     classes_attended= Column(Integer, default=0)
     attendance_pct  = Column(Float, default=0.0)
-    is_below_75     = Column(Boolean, default=False)
+    is_excess_leave     = Column(Boolean, default=False)
     updated_at      = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
 from sqlalchemy import Boolean

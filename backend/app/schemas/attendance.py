@@ -6,8 +6,7 @@ from datetime import date
 class AttendanceOverview(BaseModel):
     overall: float
     totalStudents: int
-    belowThreshold: int
-    aboveThreshold: int
+    excessLeave: int          # students with >4 absent days (replaces belowThreshold)
     trend: List[dict]
 
 class SectionAttendance(BaseModel):
@@ -15,7 +14,7 @@ class SectionAttendance(BaseModel):
     section: str
     students: int
     avg: float
-    below75: int
+    excessLeave: int          # replaces below75
 
 class AttendanceUploadResponse(BaseModel):
     success: bool
