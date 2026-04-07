@@ -54,6 +54,7 @@ def recompute_summary(db: Session):
         AttendanceRecord.student_id,
         AttendanceRecord.student_name,
         AttendanceRecord.year,
+        AttendanceRecord.department,
         AttendanceRecord.section,
         AttendanceRecord.subject_code,
         AttendanceRecord.subject_name,
@@ -61,7 +62,7 @@ def recompute_summary(db: Session):
         func.sum(case((AttendanceRecord.status == "present", 1), else_=0)).label("attended"),
     ).group_by(
         AttendanceRecord.student_id, AttendanceRecord.student_name,
-        AttendanceRecord.year, AttendanceRecord.section,
+        AttendanceRecord.year, AttendanceRecord.department, AttendanceRecord.section,
         AttendanceRecord.subject_code, AttendanceRecord.subject_name,
     ).all()
 
@@ -70,7 +71,7 @@ def recompute_summary(db: Session):
         absent_days = r.total - r.attended
         db.add(AttendanceSummary(
             student_id=r.student_id, student_name=r.student_name,
-            year=r.year, section=r.section,
+            year=r.year, department=r.department, section=r.section,
             subject_code=r.subject_code, subject_name=r.subject_name,
             total_classes=r.total, classes_attended=r.attended,
             attendance_pct=pct, is_excess_leave=(absent_days > 4),
@@ -200,7 +201,7 @@ def get_sections(db: Session, db_bio: Session, department: str = None, year: str
         func.avg(AttendanceSummary.attendance_pct).label("avg"),
         func.sum(case((AttendanceSummary.is_excess_leave == True, 1), else_=0)).label("excessLeave"),
     )
-    if department: lq = lq.filter(AttendanceSummary.section.like(f"{department}%"))
+    if department: lq = lq.filter(AttendanceSummary.department == department)
     if year:       lq = lq.filter(AttendanceSummary.year == year)
     if section:    lq = lq.filter(AttendanceSummary.section == section)
     local_rows = lq.group_by(AttendanceSummary.year, AttendanceSummary.section).all()

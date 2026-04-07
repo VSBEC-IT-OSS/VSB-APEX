@@ -10,7 +10,7 @@ def _read(file_bytes:bytes)->pd.ExcelFile:
 
 def parse_attendance(file_bytes:bytes)->Tuple[List[Dict],str]:
     xl=_read(file_bytes);df=xl.parse(xl.sheet_names[0])
-    req={"Student_ID","Year","Section","Subject_Code","Date","Status"}
+    req={"Student_ID","Department","Year","Section","Subject_Code","Date","Status"}
     miss=req-set(df.columns)
     if miss: raise HTTPException(422,f"Missing columns: {miss}")
     df=df.dropna(subset=["Student_ID","Date","Status"])
@@ -18,7 +18,7 @@ def parse_attendance(file_bytes:bytes)->Tuple[List[Dict],str]:
     df=df[df["Status"].isin(["present","absent"])]
     batch_id=str(uuid.uuid4())[:8]
     rows=[{"student_id":str(r["Student_ID"]).strip(),"student_name":str(r.get("Student_Name","")).strip(),
-      "year":str(r["Year"]).strip(),"section":str(r["Section"]).strip(),
+      "department":str(r["Department"]).strip(),"year":str(r["Year"]).strip(),"section":str(r["Section"]).strip(),
       "subject_code":str(r["Subject_Code"]).strip(),"subject_name":str(r.get("Subject_Name","")).strip(),
       "date":pd.to_datetime(r["Date"]).date(),"status":r["Status"],"upload_batch":batch_id}
      for _,r in df.iterrows()]

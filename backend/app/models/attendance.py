@@ -17,6 +17,7 @@ class AttendanceRecord(Base):
     student_id   = Column(String(20), index=True, nullable=False)   # reg number
     student_name = Column(String(100))
     year         = Column(String(20), nullable=False)               # "I Year"
+    department   = Column(String(50), nullable=True)               # "IT"
     section      = Column(String(5),  nullable=False)               # "A"
     subject_code = Column(String(20), nullable=False)
     subject_name = Column(String(100))
@@ -40,6 +41,7 @@ class AttendanceSummary(Base):
     student_id      = Column(String(20), index=True, nullable=False)
     student_name    = Column(String(100))
     year            = Column(String(20), nullable=False)
+    department      = Column(String(50), nullable=True)
     section         = Column(String(5),  nullable=False)
     subject_code    = Column(String(20), nullable=False)
     subject_name    = Column(String(100))
