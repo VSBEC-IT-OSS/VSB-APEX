@@ -5,12 +5,12 @@ from app.db.database import Base
 
 class AttendanceRecord(Base):
     """
-    One row = one student's attendance for one subject on one date.
+    One row = one student's attendance for one date.
     Sourced from: Excel upload or biometric CSV.
     """
     __tablename__ = "attendance_records"
     __table_args__ = (
-        UniqueConstraint("student_id", "subject_code", "date", name="uq_attendance"),
+        UniqueConstraint("student_id", "date", name="uq_attendance"),
     )
 
     id           = Column(Integer, primary_key=True, index=True)
@@ -19,8 +19,6 @@ class AttendanceRecord(Base):
     year         = Column(String(20), nullable=False)               # "I Year"
     department   = Column(String(50), nullable=True)               # "IT"
     section      = Column(String(5),  nullable=False)               # "A"
-    subject_code = Column(String(20), nullable=True)
-    subject_name = Column(String(100), nullable=True)
     date         = Column(Date, nullable=False, index=True)
     status       = Column(String(10), nullable=False)               # present | absent
     uploaded_at  = Column(DateTime(timezone=True), server_default=func.now())
@@ -29,12 +27,12 @@ class AttendanceRecord(Base):
 
 class AttendanceSummary(Base):
     """
-    Pre-aggregated summary per student per subject.
+    Pre-aggregated summary per student.
     Recomputed after every upload. Used by dashboard APIs.
     """
     __tablename__ = "attendance_summary"
     __table_args__ = (
-        UniqueConstraint("student_id", "subject_code", name="uq_att_summary"),
+        UniqueConstraint("student_id", name="uq_att_summary"),
     )
 
     id              = Column(Integer, primary_key=True, index=True)
@@ -43,8 +41,6 @@ class AttendanceSummary(Base):
     year            = Column(String(20), nullable=False)
     department      = Column(String(50), nullable=True)
     section         = Column(String(5),  nullable=False)
-    subject_code    = Column(String(20), nullable=True)
-    subject_name    = Column(String(100), nullable=True)
     total_classes   = Column(Integer, default=0)
     classes_attended= Column(Integer, default=0)
     attendance_pct  = Column(Float, default=0.0)

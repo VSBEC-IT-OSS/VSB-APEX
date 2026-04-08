@@ -312,9 +312,12 @@ def get_department_totals(db: Session) -> Dict:
     with_arrears = db.query(func.count(func.distinct(Result.student_id))).filter(
         Result.has_arrear == True
     ).scalar() or 0
+    # Count distinct students who have at least one passing result
+    passed_students = db.query(func.count(func.distinct(Result.student_id))).filter(
+        Result.is_pass == True
+    ).scalar() or 0
     pass_pct = round(
-        db.query(func.count()).filter(Result.is_pass == True).scalar() /
-        max(db.query(func.count()).scalar(), 1) * 100, 1
+        passed_students / max(total, 1) * 100, 1
     )
     return {
         "totalStudents": total,
@@ -351,4 +354,4 @@ def get_cgpa_toppers(db: Session, limit: int = 5) -> List[Dict]:
             "semester": latest_sem,
         }
         for r in rows
-    ]
+    ]

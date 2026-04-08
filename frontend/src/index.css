@@ -69,12 +69,47 @@ input, select { font-family: var(--font-body); }
 .fade-up-4 { animation: fadeUp 0.35s 0.16s ease both; }
 .fade-up-5 { animation: fadeUp 0.35s 0.20s ease both; }
 
-@keyframes shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive Grids ── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.triple-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 14px;
+}
+
+/* ── Mobile Overrides (< 1024px) ── */
+@media (max-width: 1024px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .triple-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── Mobile Overrides (< 768px) ── */
+@media (max-width: 768px) {
+  .stat-grid { grid-template-columns: 1fr; }
+  .content-grid { grid-template-columns: 1fr; }
+  .triple-grid { grid-template-columns: 1fr; }
+  
+  .mobile-hide { display: none !important; }
+  .mobile-stack { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

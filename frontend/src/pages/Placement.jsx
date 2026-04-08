@@ -4,6 +4,7 @@ import{useData}from'../hooks/useData.js';
 import Card from'../components/ui/Card.jsx';
 import LoadingSpinner from'../components/ui/LoadingSpinner.jsx';
 import PageHeader from'../components/ui/PageHeader.jsx';
+import ErrorCard from'../components/ui/ErrorCard.jsx';
 import{Table,Tr,Td}from'../components/ui/Table.jsx';
 import{dataService}from'../data/dataService.js';
 import{TrendingUp,Building2,IndianRupee,Award,Users,Upload,FileSpreadsheet,CheckCircle,AlertCircle,X,Plus}from'lucide-react';
@@ -15,6 +16,7 @@ const COLOR_PALETTE=['#16a34a','#1e3a5f','#2a5298','#6d28d9','#b45309','#4a5568'
 function getColor(index){return COLOR_PALETTE[index%COLOR_PALETTE.length];}
 
 function groupPlacementRows(rows){
+  if(!rows)return[];
   const groups={};
   rows.forEach(row=>{
     const company=row.company||'Unknown';
@@ -36,7 +38,7 @@ function groupPlacementRows(rows){
 
 function buildPackageDistribution(companies){
   const counts={'>10 LPA':0,'6–10':0,'4–6':0,'<4':0};
-  companies.forEach(company=>{
+  (companies||[]).forEach(company=>{
     const pkg=Number(company.package??0);
     if(pkg>10)counts['>10 LPA']+=1;
     else if(pkg>=6)counts['6–10']+=1;
@@ -48,7 +50,7 @@ function buildPackageDistribution(companies){
 
 function buildBatchData(rows){
   const map={};
-  rows.forEach(row=>{
+  (rows||[]).forEach(row=>{
     const name=row.batch||'All';
     if(!map[name])map[name]={name,placed:0,totalPackage:0,count:0};
     map[name].placed+=1;
@@ -60,7 +62,7 @@ function buildBatchData(rows){
 
 function buildSectionData(rows){
   const map={};
-  rows.forEach(row=>{
+  (rows||[]).forEach(row=>{
     const name=row.section||'All';
     if(!map[name])map[name]={name,placed:0,totalPackage:0,count:0};
     map[name].placed+=1;
@@ -94,7 +96,7 @@ function UploadPanel({onClose,onSuccess}){
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
         <div>
           <h3 style={{fontFamily:'var(--font-display)',fontWeight:700,fontSize:14}}>Upload Placement Data</h3>
-          <p style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Required: Student_ID, Company, Package_LPA</p>
+          <p style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Required: Student_ID, Student_Name, Company, Package_LPA</p>
         </div>
         <button onClick={onClose} style={{color:'var(--text3)',display:'flex',padding:4,cursor:'pointer'}}><X size={16}/></button>
       </div>
@@ -185,8 +187,8 @@ function StudentDetailsPopup({company,students,maxPkg,position,onClose}){
 }
 
 export default function Placement(){
-  const{data:stats,loading:statsLoading}=useData('getPlacementStats');
-  const{data:rows,loading:rowsLoading}=useData('getPlacementRows');
+  const{data:stats,loading:statsLoading,error:statsError}=useData('getPlacementStats');
+  const{data:rows,loading:rowsLoading,error:rowsError}=useData('getPlacementRows');
   const[showUpload,setShowUpload]=useState(false);
   const[showAdd,setShowAdd]=useState(false);
   const[companies,setCompanies]=useState([]);
@@ -203,7 +205,14 @@ export default function Placement(){
     }
   },[rows]);
 
-  if(statsLoading||rowsLoading||!stats)return<LoadingSpinner/>;
+  if(statsLoading||rowsLoading)return<LoadingSpinner/>;
+  
+  if(statsError||rowsError)return(
+    <div style={{padding:'24px 28px'}}>
+      <PageHeader title="Placement Statistics" sub="Server connectivity issue"/>
+      <ErrorCard message={statsError||rowsError} onRetry={()=>window.location.reload()}/>
+    </div>
+  );
 
   const filteredRows=(rows||[]).filter(r=>{
     const batchMatch=selectedBatch==='All'||r.batch===selectedBatch;
@@ -212,7 +221,6 @@ export default function Placement(){
     return batchMatch&&sectionMatch&&companyMatch;
   });
 
-  // Filter companies by batch and section
   const filteredCompanies=companies.filter(c=>{
     const batchMatch=selectedBatch==='All'||c.batch===selectedBatch;
     const sectionMatch=selectedSection==='All'||c.section===selectedSection;
@@ -272,8 +280,7 @@ export default function Placement(){
 
       {showUpload&&<UploadPanel onClose={()=>setShowUpload(false)} onSuccess={()=>{setShowUpload(false);setTimeout(()=>refetchData(),500);}}/>}
 
-      {/* Filter Controls */}
-      <Card style={{marginBottom:16,padding:'12px 16px',display:'flex',gap:16,alignItems:'center'}}>
+      <Card style={{marginBottom:16,padding:'12px 16px',display:'flex',gap:16,alignItems:'center',flexWrap:'wrap'}}>
         <div>
           <label style={{fontSize:11,fontWeight:600,color:'var(--text2)',textTransform:'uppercase',letterSpacing:'0.05em',display:'block',marginBottom:4}}>Batch</label>
           <select value={selectedBatch} onChange={e=>setSelectedBatch(e.target.value)}
@@ -300,25 +307,23 @@ export default function Placement(){
         </div>
       </Card>
 
-      {/* KPIs */}
-      <div className="fade-up-1" style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:12,marginBottom:16}}>
+      <div className="fade-up-1 stat-grid" style={{marginBottom:16}}>
         {[
-          {label:'Placement Rate',value:`${filteredCompanies.length?Math.round((placed/filteredCompanies.reduce((a,c)=>a+c.students,0))*100):0}%`,color:'green',icon:TrendingUp},
-          {label:'Students Placed',value:`${filteredCompanies.reduce((a,c)=>a+c.students,0)}`,color:'blue',icon:Users},
-          {label:'Total Students',value:`${filteredRows.length}`,color:'blue',icon:Award},
-          {label:'Avg Package',value:`₹${filteredCompanies.length>0?(filteredCompanies.reduce((a,c)=>a+c.package,0)/filteredCompanies.length).toFixed(2):'0'}L`,color:'gold',icon:IndianRupee},
-          {label:'Highest Package',value:`₹${filteredCompanies.length>0?Math.max(...filteredCompanies.map(c=>c.package)):'0'}L`,color:'purple',icon:Building2},
+          {label:'Placement Rate',value:`${stats?.placementPct ?? 0}%`,color:'green',icon:TrendingUp},
+          {label:'Students Placed',value:`${stats?.placed ?? 0}`,color:'blue',icon:Users},
+          {label:'Total Students',value:`${stats?.eligible ?? 0}`,color:'blue',icon:Award},
+          {label:'Avg Package',value:`₹${stats?.avgPackage ?? 0}L`,color:'gold',icon:IndianRupee},
+          {label:'Highest Package',value:`₹${stats?.topPackage ?? 0}L`,color:'purple',icon:Building2},
         ].map(s=>{
           const Icon=s.icon;
           const COLS={green:{bg:'var(--green-bg)',text:'var(--green)',bar:'var(--green)'},blue:{bg:'var(--accent-bg)',text:'var(--accent)',bar:'var(--accent)'},gold:{bg:'var(--gold-bg)',text:'var(--gold)',bar:'var(--gold)'},purple:{bg:'var(--purple-bg)',text:'var(--purple)',bar:'var(--purple)'}};
           const c=COLS[s.color];
           const isHighestCard=s.label==='Highest Package';
-          const isHighestCardActive=isHighestCard&&detailsPopup?.maxPkg===highestPackageValue;
           return(
             <div key={s.label}
               onMouseEnter={isHighestCard?e=>{e.stopPropagation(); if(highestPackageStudents.length>0)setDetailsPopup({company:highestPackageStudents[0].company||'Top Student',students:highestPackageStudents,maxPkg:highestPackageValue,position:{x:e.clientX,y:e.clientY}});}:undefined}
               onMouseLeave={isHighestCard?()=>setDetailsPopup(null):undefined}
-              style={{background:isHighestCard&&isHighestCardActive?'var(--surface2)':'var(--surface)',border:'1px solid var(--border)',borderTop:`3px solid ${c.bar}`,borderRadius:10,padding:'15px 16px',boxShadow:'var(--shadow-sm)',cursor:isHighestCard?'pointer':'default',transition:'background .15s'}}>
+              style={{background:'var(--surface)',border:'1px solid var(--border)',borderTop:`3px solid ${c.bar}`,borderRadius:10,padding:'15px 16px',boxShadow:'var(--shadow-sm)',cursor:isHighestCard?'pointer':'default',transition:'background .15s'}}>
               <div style={{display:'flex',justifyContent:'space-between'}}>
                 <div>
                   <p style={{fontSize:10,color:'var(--text3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em'}}>{s.label}</p>
@@ -333,7 +338,7 @@ export default function Placement(){
         })}
       </div>
 
-      <div className="fade-up-2" style={{display:'grid',gridTemplateColumns:'1fr 1.3fr',gap:14,marginBottom:14}}>
+      <div className="fade-up-2 content-grid" style={{marginBottom:14}}>
         <Card>
           <h3 style={{fontFamily:'var(--font-display)',fontWeight:700,fontSize:14,marginBottom:4}}>Placement Overview</h3>
           <p style={{fontSize:11,color:'var(--text3)',marginBottom:10}}>Placed vs not yet placed</p>
@@ -366,8 +371,7 @@ export default function Placement(){
         </Card>
       </div>
 
-      {/* Comparison Graphs */}
-      <div className="fade-up-2" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}>
+      <div className="fade-up-2 content-grid" style={{marginBottom:14}}>
         <Card>
           <h3 style={{fontFamily:'var(--font-display)',fontWeight:700,fontSize:14,marginBottom:4}}>Batch Comparison</h3>
           <p style={{fontSize:11,color:'var(--text3)',marginBottom:10}}>Placement & avg package by batch</p>
@@ -402,10 +406,9 @@ export default function Placement(){
         </Card>
       </div>
 
-      {/* Company table */}
       <div className="fade-up-3">
         <Card style={{padding:0}}>
-          <div style={{padding:'14px 18px 12px',borderBottom:'1px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <div style={{padding:'14px 18px 12px',borderBottom:'1px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:10}}>
             <div>
               <h3 style={{fontFamily:'var(--font-display)',fontWeight:700,fontSize:14}}>Company-wise Breakdown</h3>
               <p style={{fontSize:11,color:'var(--text3)',marginTop:1}}>Offers by company this season</p>
@@ -419,30 +422,32 @@ export default function Placement(){
               <span style={{fontSize:12,color:'var(--text3)'}}>{placed} total placed</span>
             </div>
           </div>
-          <Table headers={['Company','Type','Batch','Section','Package','Students','Share']}>
-            {sortedCompanies.map((c,i)=>{
-              const maxPkgStudents=getMaxPkgStudents(c.company);
-              const isMaxPkg=hoveredMaxPkg===`${c.company}-${i}`;
-              return(
-                <Tr key={i} onMouseEnter={()=>setHoveredMaxPkg(`${c.company}-${i}`)} onMouseLeave={()=>setHoveredMaxPkg(null)}>
-                  <Td><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{width:8,height:8,borderRadius:'50%',background:c.color,flexShrink:0}}/><span style={{fontWeight:600,color:'var(--text)',fontSize:13}}>{c.company}</span></div></Td>
-                  <Td><span style={{fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:20,background:'var(--accent-bg)',color:'var(--accent)'}}>{c.type}</span></Td>
-                  <Td style={{fontSize:12}}>{c.batch}</Td>
-                  <Td style={{fontSize:12,fontWeight:600}}>{c.section}</Td>
-                  <Td style={{fontFamily:'var(--font-mono)',fontWeight:700,color:'var(--green)',fontSize:12,transition:'background .15s,color .15s',background:isMaxPkg?'var(--surface2)':'transparent'}}>₹{c.package}L{isMaxPkg&&maxPkgStudents.students.length>0&&<span style={{fontSize:10,color:'var(--text3)',marginLeft:4}}>({maxPkgStudents.students.length})</span>}</Td>
-                  <Td>{c.students}</Td>
-                  <Td>
-                    <div style={{display:'flex',alignItems:'center',gap:7}}>
-                      <div style={{width:65,height:5,background:'var(--surface2)',borderRadius:3,overflow:'hidden'}}>
-                        <div style={{width:`${Math.round(c.students/placed*100)}%`,height:'100%',background:c.color,borderRadius:3}}/>
+          <div style={{overflowX:'auto'}}>
+            <Table headers={['Company','Type','Batch','Section','Package','Students','Share']}>
+              {sortedCompanies.map((c,i)=>{
+                const maxPkgStudents=getMaxPkgStudents(c.company);
+                const isMaxPkg=hoveredMaxPkg===`${c.company}-${i}`;
+                return(
+                  <Tr key={i} onMouseEnter={()=>setHoveredMaxPkg(`${c.company}-${i}`)} onMouseLeave={()=>setHoveredMaxPkg(null)}>
+                    <Td><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{width:8,height:8,borderRadius:'50%',background:c.color,flexShrink:0}}/><span style={{fontWeight:600,color:'var(--text)',fontSize:13}}>{c.company}</span></div></Td>
+                    <Td><span style={{fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:20,background:'var(--accent-bg)',color:'var(--accent)'}}>{c.type}</span></Td>
+                    <Td style={{fontSize:12}}>{c.batch}</Td>
+                    <Td style={{fontSize:12,fontWeight:600}}>{c.section}</Td>
+                    <Td style={{fontFamily:'var(--font-mono)',fontWeight:700,color:'var(--green)',fontSize:12,transition:'background .15s,color .15s',background:isMaxPkg?'var(--surface2)':'transparent'}}>₹{c.package}L{isMaxPkg&&maxPkgStudents.students.length>0&&<span style={{fontSize:10,color:'var(--text3)',marginLeft:4}}>({maxPkgStudents.students.length})</span>}</Td>
+                    <Td>{c.students}</Td>
+                    <Td>
+                      <div style={{display:'flex',alignItems:'center',gap:7}}>
+                        <div style={{width:65,height:5,background:'var(--surface2)',borderRadius:3,overflow:'hidden'}}>
+                          <div style={{width:`${Math.round(c.students/placed*100)}%`,height:'100%',background:c.color,borderRadius:3}}/>
+                        </div>
+                        <span style={{fontSize:11,color:'var(--text3)'}}>{Math.round(c.students/placed*100)}%</span>
                       </div>
-                      <span style={{fontSize:11,color:'var(--text3)'}}>{Math.round(c.students/placed*100)}%</span>
-                    </div>
-                  </Td>
-                </Tr>
-              );
-            })}
-          </Table>
+                    </Td>
+                  </Tr>
+                );
+              })}
+            </Table>
+          </div>
         </Card>
       </div>
 

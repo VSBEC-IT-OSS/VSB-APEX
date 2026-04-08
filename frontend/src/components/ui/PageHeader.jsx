@@ -1,7 +1,7 @@
 // frontend/src/components/ui/PageHeader.jsx
 export default function PageHeader({ title, sub, action }) {
   return (
-    <div style={{
+    <div className="mobile-stack" style={{
       display: 'flex', justifyContent: 'space-between',
       alignItems: 'flex-end', marginBottom: 24,
     }}>

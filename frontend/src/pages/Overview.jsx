@@ -10,6 +10,7 @@ import StatCard from '../components/ui/StatCard.jsx';
 import Card from '../components/ui/Card.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import PageHeader from '../components/ui/PageHeader.jsx';
+import ErrorCard from '../components/ui/ErrorCard.jsx';
 import { useState, useEffect } from 'react';
 import {
   AreaChart, Area, XAxis, YAxis,
@@ -28,7 +29,7 @@ function HoverPopup({ title, content, x, y, onClose }) {
       borderRadius: 12, padding: '14px 16px',
       boxShadow: '0 20px 50px rgba(0,0,0,0.15)',
       animation: 'fadeIn 0.15s ease-out',
-      pointerEvents: 'none', // Critical: Don't block mouse events for the card below
+      pointerEvents: 'none',
     }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
         <h3 style={{ fontSize:13, fontWeight:700, color:'var(--text)', margin:0 }}>{title}</h3>
@@ -113,7 +114,7 @@ export default function Overview() {
   const [cgpaTop,   setCgpaTop]   = useState(null);
   const [itToppers, setItToppers] = useState(null);
 
-  const [hover, setHover] = useState(null); // { title, content, x, y }
+  const [hover, setHover] = useState(null);
 
   useEffect(() => {
     dataService.getAttendanceToday().then(setToday).catch(() => {});
@@ -126,6 +127,14 @@ export default function Overview() {
   }, []);
 
   if (att.loading || res.loading) return <LoadingSpinner />;
+  
+  if (att.error || res.error) return (
+    <div style={{ padding: '24px 28px' }}>
+      <PageHeader title="Department Overview" sub="Connectivity Error" />
+      <ErrorCard message={att.error || res.error} onRetry={() => window.location.reload()} />
+    </div>
+  );
+
   const a = att.data || {};
   const r = res.data || {};
   const p = pl.data  || {};
@@ -137,7 +146,7 @@ export default function Overview() {
         <tr>{['Yr','Sec','Abs','Ttl'].map(h => (<th key={h} style={{ textAlign: 'left', color: 'var(--text3)', paddingBottom: 4 }}>{h}</th>))}</tr>
       </thead>
       <tbody>
-        {today.absentees.filter(ab => ab.absent > 0).map((ab, i) => (
+        {(today.absentees || []).filter(ab => ab.absent > 0).map((ab, i) => (
           <tr key={i} style={{ borderTop: '1px solid var(--border)' }}>
             <td style={{ padding: '3px 0' }}>{ab.year}</td>
             <td style={{ padding: '3px 0' }}>{ab.section}</td>
@@ -177,11 +186,9 @@ export default function Overview() {
     month: t.month, attendance: t.pct, pass: (r.trend || [])[i]?.pass ?? null,
   }));
 
-  const scorecardWrappperStyle = { cursor: 'help' };
-
   return (
     <div style={{ padding: '24px 28px' }}>
-      <PageHeader title="Department Overview" sub="Academic Year 2024–25 · Dept of Information Technology" />
+      <PageHeader title="Department Overview" sub="Academic Year 2024–25 · IT Dept" />
 
       {a.belowThreshold > 50 && (
         <div className="fade-up" style={{ background: 'var(--red-bg)', border: '1px solid #fca5a5', borderLeft: '4px solid var(--red)', borderRadius: 8, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
@@ -190,20 +197,20 @@ export default function Overview() {
         </div>
       )}
 
-      <div className="fade-up-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 20 }}>
+      <div className="fade-up-1 stat-grid" style={{ marginBottom: 20 }}>
         <div
           onMouseEnter={(e) => setHover({ title: "Today's Absentees", content: attendanceContent, x: e.clientX, y: e.clientY })}
           onMouseMove={onMouseMove}
           onMouseLeave={() => setHover(null)}
-          style={scorecardWrappperStyle}
+          style={{ cursor: 'help' }}
         >
-          <StatCard label="Today's Attendance" value={today?.hasData ? `${today.overall}%` : '—'} sub={today?.hasData ? `${today.totalStudents - today.totalPresent} absent today` : 'No daily data'} color="blue" icon={Users} linkTo="/attendance" hoverContent={!!today} />
+          <StatCard label="Today's Attendance" value={today?.hasData ? `${today.overall}%` : '—'} sub={today?.hasData ? `${(today.totalStudents || 0) - (today.totalPresent || 0)} absent today` : 'No daily data'} color="blue" icon={Users} linkTo="/attendance" hoverContent={!!today} />
         </div>
         <div
           onMouseEnter={(e) => setHover({ title: "Arrear Breakdown", content: arrearContent, x: e.clientX, y: e.clientY })}
           onMouseMove={onMouseMove}
           onMouseLeave={() => setHover(null)}
-          style={scorecardWrappperStyle}
+          style={{ cursor: 'help' }}
         >
           <StatCard label="Pass Percentage" value={deptTots ? `${deptTots.passPercentage}%` : '—'} sub={`${r.failCount ?? '—'} arrear cases`} color="green" icon={BookOpen} hoverContent={!!arrears} />
         </div>
@@ -212,7 +219,7 @@ export default function Overview() {
           onMouseEnter={(e) => setHover({ title: "🏆 Top Packages", content: placementContent, x: e.clientX, y: e.clientY })}
           onMouseMove={onMouseMove}
           onMouseLeave={() => setHover(null)}
-          style={scorecardWrappperStyle}
+          style={{ cursor: 'help' }}
         >
           <StatCard label="Placement Rate" value={`${p.placementPct ?? '—'}%`} sub={`${p.placed ?? '—'} / ${p.eligible ?? '—'} placed`} color="gold" icon={Award} linkTo="/placement" hoverContent={!!topPkg} />
         </div>
@@ -222,7 +229,7 @@ export default function Overview() {
         <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div><h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>Attendance & Pass % Trend</h3></div>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 11 }}>
+            <div className="mobile-hide" style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 11 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 3, background: 'var(--accent)', borderRadius: 2 }} /> Attendance</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 3, background: 'var(--green)', borderRadius: 2 }} /> Pass %</span>
             </div>
@@ -245,24 +252,24 @@ export default function Overview() {
         </Card>
       </div>
 
-      <div className="fade-up-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 14 }}>
+      <div className="fade-up-3 triple-grid">
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}><div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--red-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Users size={15} color="var(--red)" /></div><h4 style={{ fontSize: 12, fontWeight: 700 }}>Yet to be Placed</h4></div>
           {unplaced ? <><p style={{ fontFamily: 'var(--font-display)', fontSize: 40, fontWeight: 900, color: 'var(--red)', lineHeight: 1 }}>{unplaced.unplaced}</p><p style={{ fontSize: 12, color: 'var(--text3)', marginTop: 6 }}>{unplaced.placed} placed out of {unplaced.eligible}</p></> : <Skeleton h={40} w={80} />}
         </Card>
         <Card>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}><div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--purple-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><GraduationCap size={15} color="var(--purple)" /></div><h4 style={{ fontSize: 12, fontWeight: 700 }}>CGPA Toppers</h4></div>
-          {cgpaTop ? (cgpaTop.length > 0 ? cgpaTop.slice(0, 3).map((s, i) => <TopperRow key={s.studentId} student={s} rank={i} />) : <p style={{ fontSize: 12, fontStyle: 'italic' }}>No rows.</p>) : <Skeleton h={80} w="100%" />}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}><div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--purple-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TrendingUp size={15} color="var(--purple)" /></div><h4 style={{ fontSize: 12, fontWeight: 700 }}>Toppers (CGPA)</h4></div>
+          {cgpaTop ? (cgpaTop.length > 0 ? cgpaTop.slice(0, 3).map((s, i) => <TopperRow key={i} student={s} rank={i} />) : <p style={{ fontSize: 12, fontStyle: 'italic' }}>No rows.</p>) : <Skeleton h={80} w="100%" />}
         </Card>
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}><div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--accent-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trophy size={15} color="var(--accent)" /></div><h4 style={{ fontSize: 12, fontWeight: 700 }}>Internal {itToppers?.testNumber ? `#${itToppers.testNumber}` : ''} Toppers</h4></div>
           {itToppers ? (itToppers.toppers?.length > 0 ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 12 }}>
-              {itToppers.toppers.map(group => (
-                <div key={`${group.year}-${group.section}`} style={{ background: 'var(--surface2)', borderRadius: 8, padding: '10px 12px', border: '1px solid var(--border)' }}>
+              {itToppers.toppers.map((group, idx) => (
+                <div key={idx} style={{ background: 'var(--surface2)', borderRadius: 8, padding: '10px 12px', border: '1px solid var(--border)' }}>
                   <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 8 }}>{group.year} · Sec {group.section}</p>
-                  {group.students.map((s, rank) => (
-                    <div key={s.studentId} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  {(group.students || []).map((s, rank) => (
+                    <div key={rank} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                       <Avatar name={s.name} size={28} />
                       <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{['🥇','🥈','🥉'][rank]} {s.name}</div><div style={{ fontSize: 10.5, color: 'var(--accent)', fontWeight: 700 }}>{s.percentage}%</div></div>
                     </div>

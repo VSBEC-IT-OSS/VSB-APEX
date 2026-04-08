@@ -60,11 +60,11 @@ export const dataService = {
 
   // ── Attendance ──────────────────────────────────────────────
   async getAttendanceOverview(params = {}) {
-    const q = new URLSearchParams(params).toString();
+    const q = params && typeof params === 'object' ? new URLSearchParams(params).toString() : '';
     return apiFetch(`/attendance/overview${q ? '?' + q : ''}`);
   },
   async getAttendanceBySections(params = {}) {
-    const q = new URLSearchParams(params).toString();
+    const q = params && typeof params === 'object' ? new URLSearchParams(params).toString() : '';
     return apiFetch(`/attendance/section${q ? '?' + q : ''}`);
   },
   async getAvailableAttendanceDates() {

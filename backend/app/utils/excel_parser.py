@@ -10,14 +10,13 @@ def _read(file_bytes:bytes)->pd.ExcelFile:
 
 def parse_attendance(file_bytes:bytes)->Tuple[List[Dict],str]:
     xl=_read(file_bytes);df=xl.parse(xl.sheet_names[0])
-    req={"Student_ID","Department","Year","Section","Date"}
+    req={"Student_ID","Student_Name","Department","Year","Section","Date"}
     miss=req-set(df.columns)
     if miss: raise HTTPException(422,f"Missing columns: {miss}")
     df=df.dropna(subset=["Student_ID","Date"])
     batch_id=str(uuid.uuid4())[:8]
-    rows=[{"student_id":str(r["Student_ID"]).strip(),"student_name":str(r.get("Student_Name","")).strip(),
+    rows=[{"student_id":str(r["Student_ID"]).strip(),"student_name":str(r["Student_Name"]).strip(),
       "department":str(r["Department"]).strip(),"year":str(r["Year"]).strip(),"section":str(r["Section"]).strip(),
-      "subject_code":str(r.get("Subject_Code","GENERAL")).strip(),"subject_name":str(r.get("Subject_Name","General Attendance")).strip(),
       "date":pd.to_datetime(r["Date"]).date(),"status":"present","upload_batch":batch_id}
      for _,r in df.iterrows()]
     return rows,batch_id
@@ -58,12 +57,12 @@ def parse_internal_test(file_bytes:bytes)->Tuple[List[Dict],str]:
 
 def parse_placement(file_bytes:bytes)->Tuple[List[Dict],str]:
     xl=_read(file_bytes);df=xl.parse(xl.sheet_names[0])
-    req={"Student_ID","Department","Year","Section","Company","Package_LPA"}
+    req={"Student_ID","Student_Name","Department","Year","Section","Company","Package_LPA"}
     miss=req-set(df.columns)
     if miss: raise HTTPException(422,f"Missing columns: {miss}")
     df=df.dropna(subset=["Student_ID","Company"])
     batch_id=str(uuid.uuid4())[:8]
-    rows=[{"student_id":str(r["Student_ID"]).strip(),"student_name":str(r.get("Student_Name","")).strip(),
+    rows=[{"student_id":str(r["Student_ID"]).strip(),"student_name":str(r["Student_Name"]).strip(),
       "department":str(r["Department"]).strip(),"year":str(r["Year"]).strip(),"section":str(r["Section"]).strip(),
       "company":str(r["Company"]).strip(),"package_lpa":float(r.get("Package_LPA",0)),
       "offer_type":str(r.get("Offer_Type","IT")).strip(),"batch":str(r.get("Batch","")).strip(),"upload_batch":batch_id}
