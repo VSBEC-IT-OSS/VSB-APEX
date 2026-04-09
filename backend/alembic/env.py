@@ -11,7 +11,7 @@ from app.models import *  # noqa: F401 — import all models so Alembic sees the
 from app.core.config import settings
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+config.set_main_option("sqlalchemy.url", settings.database_url)
 
 if config.config_file_name:
     fileConfig(config.config_file_name)

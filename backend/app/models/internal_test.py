@@ -6,7 +6,7 @@ from app.db.database import Base
 class InternalTest(Base):
     __tablename__ = "internal_tests"
     __table_args__ = (
-        UniqueConstraint("student_id", "subject_code", "test_number", name="uq_internal"),
+        UniqueConstraint("student_id", "subject_code", "test_number", "semester", name="uq_internal"),
     )
 
     id           = Column(Integer, primary_key=True, index=True)
@@ -15,6 +15,7 @@ class InternalTest(Base):
     year         = Column(String(20), nullable=False)
     department   = Column(String(50), nullable=True)               # "IT"
     section      = Column(String(5),  nullable=False)
+    semester     = Column(Integer, nullable=False, default=1)      # 1-8 based on year
     subject_code = Column(String(20), nullable=False)
     subject_name = Column(String(100))
     test_number  = Column(Integer, nullable=False)   # 1, 2, 3

@@ -107,6 +107,21 @@ export const dataService = {
   async getInternalToppers(topN = 3) {
     return apiFetch(`/internal/toppers?top_n=${topN}`);
   },
+  async getInternalYears() {
+    return apiFetch('/internal/years');
+  },
+  async getInternalYearOverview(params = {}) {
+    const q = params && typeof params === 'object' ? new URLSearchParams(params).toString() : '';
+    return apiFetch(`/internal/year-overview-v2${q ? '?' + q : ''}`);
+  },
+  async getInternalSectionComparison(params = {}) {
+    const q = params && typeof params === 'object' ? new URLSearchParams(params).toString() : '';
+    return apiFetch(`/internal/section-comparison-v2${q ? '?' + q : ''}`);
+  },
+  async getInternalSubjectPerformance(params = {}) {
+    const q = params && typeof params === 'object' ? new URLSearchParams(params).toString() : '';
+    return apiFetch(`/internal/subject-performance-v2${q ? '?' + q : ''}`);
+  },
 
   // ── Placement ────────────────────────────────────────────────
   async getPlacementStats() {
