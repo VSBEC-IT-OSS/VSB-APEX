@@ -12,6 +12,12 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 480
     algorithm: str = "HS256"
     cors_origins: str = "http://localhost:5173"
+    # Email (Gmail SMTP)
+    mail_username: str = ""
+    mail_password: str = ""
+    mail_from: str = "VSB-APEX <noreply@gmail.com>"
+    # Frontend URL (for email links)
+    frontend_url: str = "http://localhost:5173"
 
     model_config = SettingsConfigDict(
         env_file=str(BASE_DIR / ".env"),

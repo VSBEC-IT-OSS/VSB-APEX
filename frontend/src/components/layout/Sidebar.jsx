@@ -2,7 +2,7 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, BookOpen,
-  TrendingUp, ClipboardList, Settings,
+  TrendingUp, ClipboardList, Settings, User, ShieldAlert,
   PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 
@@ -12,19 +12,22 @@ const NAV_ALWAYS = [
   { to:'/results',   icon:BookOpen,        label:'Results'        },
   { to:'/internal',  icon:ClipboardList,   label:'Internal Tests' },
   { to:'/placement', icon:TrendingUp,      label:'Placement'      },
-];
-
-const NAV_ADMIN = [
-  { to:'/settings',  icon:Settings,        label:'User Settings'  },
+  { to:'/profile',   icon:User,            label:'My Profile'     },
 ];
 
 const W_OPEN = 230;
 const W_MINI = 64;
 
 export default function Sidebar({ user, isOpen, onToggle }) {
-  const isAdmin   = user?.role === 'admin';
-  const navItems  = isAdmin ? [...NAV_ALWAYS, ...NAV_ADMIN] : NAV_ALWAYS;
   const sideWidth = isOpen ? W_OPEN : W_MINI;
+
+  // Role based additional tabs
+  const navItems = [...NAV_ALWAYS];
+  if (user?.role === 'admin') {
+    navItems.push({ to: '/settings', icon: Settings, label: 'Admin Panel' });
+  } else if (user?.role === 'hod') {
+    navItems.push({ to: '/hod', icon: ShieldAlert, label: 'HOD Panel' });
+  }
 
   return (
     <aside style={{
@@ -54,7 +57,7 @@ export default function Sidebar({ user, isOpen, onToggle }) {
             </div>
           </div>
         ) : (
-          <div style={{ display:'flex', justifyContent:'center' }}>
+          <div style={{ display:'flex', justifyContent: 'center' }}>
             <div style={{
               width:34, height:34, borderRadius:8,
               background:'rgba(255,255,255,0.15)',
@@ -120,7 +123,7 @@ export default function Sidebar({ user, isOpen, onToggle }) {
         {isOpen && (
           <div style={{ display:'flex', alignItems:'center', gap:6, marginTop: 12 }}>
             <span style={{ width:7, height:7, borderRadius:'50%', background:'#4ade80', display:'inline-block' }} />
-            <span style={{ fontSize:11, color:'rgba(255,255,255,0.45)' }}>Live · v0.3.0</span>
+            <span style={{ fontSize:11, color:'rgba(255,255,255,0.45)' }}>Live · v1.0.0</span>
           </div>
         )}
       </div>

@@ -143,4 +143,123 @@ export const dataService = {
     fd.append('file', file);
     return apiUpload(`/upload/${type}`, fd);
   },
+
+  // ── Auth profile / details updates ──
+  async updateProfile(data) {
+    return apiFetch('/auth/me', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+  async changePassword(current_password, new_password) {
+    return apiFetch('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password, new_password }),
+    });
+  },
+  async forgotPassword(email) {
+    return apiFetch('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+  async resetPassword(token, new_password) {
+    return apiFetch('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, new_password }),
+    });
+  },
+  async requestDeptChange(requested_department, reason = '') {
+    return apiFetch('/auth/request-dept-change', {
+      method: 'POST',
+      body: JSON.stringify({ requested_department, reason }),
+    });
+  },
+
+  // ── Students ──
+  async searchStudents(q) {
+    return apiFetch(`/students/search?q=${encodeURIComponent(q)}`);
+  },
+  async getStudentProfile(regNumber) {
+    return apiFetch(`/students/${encodeURIComponent(regNumber)}/profile`);
+  },
+  async getStudents(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return apiFetch(`/students${q ? '?' + q : ''}`);
+  },
+  async createStudent(data) {
+    return apiFetch('/students', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  async updateStudent(id, data) {
+    return apiFetch(`/students/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+  async deleteStudent(id) {
+    return apiFetch(`/students/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // ── User / Admin Management ──
+  async listUsers() {
+    return apiFetch('/users');
+  },
+  async createUser(data) {
+    return apiFetch('/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  async updateUser(id, data) {
+    return apiFetch(`/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+  async deleteUser(id) {
+    return apiFetch(`/users/${id}`, {
+      method: 'DELETE',
+    });
+  },
+  async getActivityLog(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return apiFetch(`/users/activity-log${q ? '?' + q : ''}`);
+  },
+  async getDeptChangeRequests() {
+    return apiFetch('/users/dept-change-requests');
+  },
+  async approveDeptChange(logId) {
+    return apiFetch(`/users/dept-change-requests/${logId}/approve`, {
+      method: 'POST',
+    });
+  },
+  async rejectDeptChange(logId) {
+    return apiFetch(`/users/dept-change-requests/${logId}/reject`, {
+      method: 'POST',
+    });
+  },
+  async uploadHistory() {
+    return apiFetch('/users/upload-history');
+  },
+
+  // ── Staff Assignments ──
+  async getStaffAssignments() {
+    return apiFetch('/staff-assignments');
+  },
+  async createAssignment(data) {
+    return apiFetch('/staff-assignments', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  async deleteAssignment(assignmentId) {
+    return apiFetch(`/staff-assignments/${assignmentId}`, {
+      method: 'DELETE',
+    });
+  },
 };

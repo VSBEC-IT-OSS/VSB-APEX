@@ -119,6 +119,11 @@ export default function Login({ onLogin }) {
                   {show ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
+              <div style={{ textAlign: 'right', marginTop: 8 }}>
+                <a href="/forgot-password" style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>
+                  Forgot Password?
+                </a>
+              </div>
             </div>
 
             <button type="submit" disabled={loading} style={{
@@ -132,10 +137,6 @@ export default function Login({ onLogin }) {
               {loading ? 'Signing in…' : <><LogIn size={15} /> Sign In</>}
             </button>
           </form>
-
-          <p style={{ fontSize: 11, color: 'var(--text3)', textAlign: 'center', marginTop: 18 }}>
-            Demo: <code style={{ background:'var(--surface2)', padding:'1px 6px', borderRadius:4 }}>hod@vsbec.edu.in</code> / <code style={{ background:'var(--surface2)', padding:'1px 6px', borderRadius:4 }}>admin123</code>
-          </p>
         </div>
       </div>
     </div>

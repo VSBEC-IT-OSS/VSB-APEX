@@ -1,7 +1,6 @@
 # app/schemas/user.py
 """
-Schemas for user management & activity log.
-Extends / replaces backend/app/schemas/user.py
+Schemas for user management, activity log, and related entities.
 """
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
@@ -28,6 +27,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     role: str = "staff"
+    department: Optional[str] = None
 
     @field_validator("role")
     @classmethod
@@ -38,10 +38,13 @@ class UserCreate(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    name: Optional[str] = None
-    role: Optional[str] = None
-    is_active: Optional[bool] = None
-    password: Optional[str] = None
+    name:       Optional[str]   = None
+    username:   Optional[str]   = None
+    email:      Optional[EmailStr] = None
+    role:       Optional[str]   = None
+    department: Optional[str]   = None
+    is_active:  Optional[bool]  = None
+    password:   Optional[str]   = None  # admin force-reset
 
     @field_validator("role")
     @classmethod
@@ -52,11 +55,13 @@ class UserUpdate(BaseModel):
 
 
 class UserOut(BaseModel):
-    id: int
-    name: str
-    email: str
-    role: str
-    is_active: bool
+    id:         int
+    name:       str
+    username:   Optional[str]      = None
+    email:      str
+    role:       str
+    department: Optional[str]      = None
+    is_active:  bool
     last_login: Optional[datetime] = None
     created_at: datetime
 
@@ -67,11 +72,11 @@ class UserOut(BaseModel):
 # ── Activity Log ──────────────────────────────────────────────────────────────
 
 class ActivityLogOut(BaseModel):
-    id: int
-    user_id: int
-    user_name: Optional[str] = None   # joined from User
+    id:         int
+    user_id:    int
+    user_name:  Optional[str] = None
     user_email: Optional[str] = None
-    action: str
+    action:     str
     ip_address: Optional[str] = None
     user_agent: Optional[str] = None
     created_at: datetime

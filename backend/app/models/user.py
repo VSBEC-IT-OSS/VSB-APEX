@@ -1,7 +1,6 @@
 # app/models/user.py
 """
-User model — updated to include last_login timestamp.
-Drop-in replacement for backend/app/models/user.py
+User model — includes role, department scoping, and profile fields.
 """
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.sql import func
@@ -13,9 +12,11 @@ class User(Base):
 
     id          = Column(Integer, primary_key=True, index=True)
     name        = Column(String(100), nullable=False)
+    username    = Column(String(60), unique=True, index=True, nullable=True)
     email       = Column(String(150), unique=True, index=True, nullable=False)
     password    = Column(String(255), nullable=False)
     role        = Column(String(20), default="staff")   # admin | hod | staff
+    department  = Column(String(50), nullable=True)      # scopes HOD & staff to one dept
     is_active   = Column(Boolean, default=True)
     last_login  = Column(DateTime(timezone=True), nullable=True)
     created_at  = Column(DateTime(timezone=True), server_default=func.now())

@@ -8,5 +8,16 @@ venv/
 dist/
 .pytest_cache/
 .mypy_cache/
+.hypothesis/
 uploads/
 *.db
+
+# Test files
+test_*.py
+**/test_*.py
+verify_*.py
+verify_*.xlsx
+check_*.py
+
+# Credentials
+LOGIN_CREDENTIALS.txt

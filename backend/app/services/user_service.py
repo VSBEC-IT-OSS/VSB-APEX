@@ -114,14 +114,21 @@ def create_user(db: Session, data: UserCreate) -> User:
 
 def update_user(db: Session, user_id: int, data: UserUpdate) -> User:
     user = get_user(db, user_id)
-    if data.name is not None:
-        user.name = data.name
-    if data.role is not None:
-        user.role = data.role
-    if data.is_active is not None:
-        user.is_active = data.is_active
-    if data.password is not None:
-        user.password = hash_password(data.password)
+    if data.name       is not None: user.name       = data.name
+    if data.username   is not None:
+        conflict = db.query(User).filter(User.username == data.username, User.id != user_id).first()
+        if conflict:
+            raise HTTPException(status_code=409, detail="Username already taken")
+        user.username = data.username
+    if data.email      is not None:
+        conflict = db.query(User).filter(User.email == data.email, User.id != user_id).first()
+        if conflict:
+            raise HTTPException(status_code=409, detail="Email already in use")
+        user.email = data.email
+    if data.role       is not None: user.role       = data.role
+    if data.department is not None: user.department = data.department
+    if data.is_active  is not None: user.is_active  = data.is_active
+    if data.password   is not None: user.password   = hash_password(data.password)
     db.commit()
     db.refresh(user)
     return user
