@@ -198,7 +198,7 @@ def get_overview(db: Session, db_bio: Session, department: str = None, year: str
     
     # 2. Get Local Summaries
     q = db.query(AttendanceSummary)
-    if department: q = q.filter(AttendanceSummary.section.like(f"{department}%"))
+    if department: q = q.filter(AttendanceSummary.department == department)
     if year:       q = q.filter(AttendanceSummary.year == year)
     local_sums = {r.student_id: {
         "total": r.total_classes,
