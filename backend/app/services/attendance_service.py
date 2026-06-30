@@ -164,32 +164,36 @@ def get_biometric_summary(db_bio: Session, department: str = None, year: str = N
     if not db_bio:
         return {}
     
-    q = db_bio.query(
-        AttendanceRecordBio.studentId,
-        func.count().label("total"),
-        func.sum(case((AttendanceRecordBio.status == "PRESENT", 1), else_=0)).label("attended")
-    )
-    if department: q = q.filter(AttendanceRecordBio.department == department)
-    # Note: 'class' is used for Year in the Prisma schema mapping? 
-    # Let's check the Prisma schema again. It had className @map("class"). 
-    # VSB-APEX 'year' might map to className.
-    if year: q = q.filter(AttendanceRecordBio.class_name == year)
-    if date_from: q = q.filter(AttendanceRecordBio.date >= date_from)
-    if date_to: q = q.filter(AttendanceRecordBio.date <= date_to)
-    
-    results = q.group_by(AttendanceRecordBio.studentId).all()
-    
-    summary = {}
-    for r in results:
-        pct = round((r.attended / r.total * 100), 2) if r.total else 0
-        absent_days = r.total - r.attended
-        summary[r.studentId] = {
-            "total": r.total,
-            "attended": r.attended,
-            "pct": pct,
-            "is_excess": absent_days > 4
-        }
-    return summary
+    try:
+        q = db_bio.query(
+            AttendanceRecordBio.studentId,
+            func.count().label("total"),
+            func.sum(case((AttendanceRecordBio.status == "PRESENT", 1), else_=0)).label("attended")
+        )
+        if department: q = q.filter(AttendanceRecordBio.department == department)
+        # Note: 'class' is used for Year in the Prisma schema mapping? 
+        # Let's check the Prisma schema again. It had className @map("class"). 
+        # VSB-APEX 'year' might map to className.
+        if year: q = q.filter(AttendanceRecordBio.class_name == year)
+        if date_from: q = q.filter(AttendanceRecordBio.date >= date_from)
+        if date_to: q = q.filter(AttendanceRecordBio.date <= date_to)
+        
+        results = q.group_by(AttendanceRecordBio.studentId).all()
+        
+        summary = {}
+        for r in results:
+            pct = round((r.attended / r.total * 100), 2) if r.total else 0
+            absent_days = r.total - r.attended
+            summary[r.studentId] = {
+                "total": r.total,
+                "attended": r.attended,
+                "pct": pct,
+                "is_excess": absent_days > 4
+            }
+        return summary
+    except Exception:
+        # Gracefully handle biometric DB errors
+        return {}
 
 def get_overview(db: Session, db_bio: Session, department: str = None, year: str = None,
                  date_from: date = None, date_to: date = None) -> Dict:
@@ -209,6 +213,15 @@ def get_overview(db: Session, db_bio: Session, department: str = None, year: str
     
     # 3. Blend (Prioritize Bio)
     all_student_ids = set(local_sums.keys()) | set(bio_sums.keys())
+    
+    # Handle empty data case
+    if not all_student_ids:
+        return {
+            "overall": 0,
+            "totalStudents": 0,
+            "excessLeave": 0,
+            "trend": [],
+        }
     
     blended = []
     total_pct = 0
